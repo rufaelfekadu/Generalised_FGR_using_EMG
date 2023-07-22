@@ -221,7 +221,7 @@ def main(args):
 
     discriminator = Discriminator().to(device)
     criterion = nn.CrossEntropyLoss()
-    d_optimizer = optim.Adam(
+    d_optimizer = torch.optim.Adam(
             discriminator.parameters(),
             lr=args.d_lr, betas=args.betas, weight_decay=args.weight_decay)
     best_acc, best_class, classNames = train_target_cnnP_domain(
