@@ -121,8 +121,8 @@ def adversarial_domain(
     vals = valStepsList[:-1]
     source_iter, target_iter = iter(source_loader), iter(target_loader)
     for iter_i in range(n_iters):
-        source_data, source_target = source_iter.next()
-        target_data, target_target, target_conf, target_domain, target_domain_conf = target_iter.next()
+        source_data, source_target = next(source_iter)
+        target_data, target_target, target_conf, target_domain, target_domain_conf = next(target_iter)
         source_data = source_data.to(args.device)
         target_data = target_data.to(args.device)
         target_target = target_target.to(args.device)
