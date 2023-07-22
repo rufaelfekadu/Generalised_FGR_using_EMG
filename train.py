@@ -269,7 +269,7 @@ if __name__ == '__main__':
     parser.add_argument('--thr_domain', type=float, default=0.87)
     parser.add_argument('--num_val', type=int, default=3)  # number of val. within each epoch
     # misc
-    parser.add_argument('--device', type=str, default='cuda:1')
+    parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--n_workers', type=int, default=4)
     parser.add_argument('--logdir', type=str, default='outputs/sgada_domain')
     # office dataset categories
