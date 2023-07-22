@@ -5,6 +5,7 @@ from time import time
 import numpy as np
 from sklearn.metrics import accuracy_score
 import torch
+import shutil
 
 def save(log_dir, state_dict, is_best):
     checkpoint_path = os.path.join(log_dir, 'checkpoint.pt')
