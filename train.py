@@ -3,15 +3,15 @@ import random
 from pathlib import Path
 import matplotlib.pyplot as plt
 from PIL import Image
-
+import argparse
 import torch
 from torch import nn
 import torch.nn.functional as functional
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from torchvision import datasets, transforms
 from sklearn.preprocessing import LabelEncoder
-
-from trainner import adversarial_domain
+import logging
+from trainner import adversarial_domain, train_target_cnnP_domain
 
 import sys
 sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recognition')
@@ -23,22 +23,49 @@ from Source.fgr.pipelines import Data_Pipeline
 from Source.fgr.data_manager import Data_Manager
 
 
+class Discriminator(nn.Module):
+    def __init__(self):
+        super(Discriminator, self).__init__()
+        self.fc1 = nn.Linear(20, 10)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = functional.softmax(x, dim=1)
+        return x
 
 # specify model
 class simpleCNN(torch.nn.Module):
-    def __init__(self, num_classes: int = 10, dropout_rate: float = 0.3):
+    def __init__(self, num_classes: int = 10, dropout_rate: float = 0.3, target=False):
             super().__init__()
             self.dropout_rate = dropout_rate
 
-            self.conv_1 = nn.Conv2d(1, 2, 2, padding='same')
-            self.batch_norm_1 = nn.BatchNorm2d(2)
-            self.conv_2 = nn.Conv2d(2, 4, 2, padding='same')
-            self.batch_norm_2 = nn.BatchNorm2d(4)
-            self.fc_1 = nn.Linear(4*4*4, 40)  # 4*4 from image dimension, 4 from num of filters
-            self.batch_norm_3 = nn.BatchNorm1d(40)
-            self.fc_2 = nn.Linear(40, 20)
-            self.batch_norm_4 = nn.BatchNorm1d(20)
-            self.fc_3 = nn.Linear(20, num_classes)
+            self.encoder = nn.Sequential(
+                 nn.Conv2d(1, 2, 2, padding='same'),
+                    nn.BatchNorm2d(2),
+                    nn.ReLU(),
+                    nn.Conv2d(2, 4, 2, padding='same'),
+                    nn.BatchNorm2d(4),
+                    nn.ReLU(),
+                    nn.Flatten(),
+                    nn.Linear(4*4*4, 40),
+                    nn.BatchNorm1d(40),
+                    nn.ReLU(),
+                    nn.Dropout(p=self.dropout_rate))
+            
+            self.classifier = nn.Sequential(
+                nn.Linear(40, 20),
+                nn.BatchNorm1d(20),
+                nn.ReLU(),
+                nn.Dropout(p=self.dropout_rate),
+                nn.Linear(20, num_classes),
+                nn.Softmax(dim=1)
+            )
+
+            if target:
+                for param in self.classifier.parameters():
+                    param.requires_grad = False
+
+
 
     def forward(self, x):
         # add white gaussian noise to the input only during training
@@ -48,23 +75,9 @@ class simpleCNN(torch.nn.Module):
             noise = noise.to(x.device)
             # add the noise to x
             x = x + noise
-        x = self.conv_1(x)
-        x = self.batch_norm_1(x)
-        x = functional.relu(x)
-        x = self.conv_2(x)
-        x = self.batch_norm_2(x)
-        x = functional.relu(x)
-        x = torch.flatten(x, 1)
-        x = self.fc_1(x)
-        x = self.batch_norm_3(x)
-        x = functional.relu(x)
-        x = functional.dropout(x, p=self.dropout_rate, training=self.training)
-        x = self.fc_2(x)
-        x = self.batch_norm_4(x)
-        x = functional.relu(x)
-        x = functional.dropout(x, p=self.dropout_rate, training=self.training)
-        x = self.fc_3(x)
-        x = functional.softmax(x, dim=1)
+       
+        x = self.encoder(x)
+        x = self.classifier(x)
         return x
 
 class simpleMLP(torch.nn.Module):
@@ -94,8 +107,8 @@ class simpleMLP(torch.nn.Module):
         x = self.batch_norm_2(x)
         x = functional.relu(x)
         x = functional.dropout(x, p=self.dropout_rate, training=self.training)
-        x = self.fc_3(x)
-        x = functional.softmax(x, dim=1)
+        # x = self.fc_3(x)
+        # x = functional.softmax(x, dim=1)
         return x
     
 
@@ -158,12 +171,12 @@ def preprocess_data(dataset):
     return train_loader, test_loader
 
 # main function
-def main():
+def main(args):
 
     # data_dir = '../data/doi_10/emg'
 
 
-
+    logger = logging.getLogger(__name__)
     # get data
     train_transform = transforms.Compose([
                     transforms.Grayscale(),
@@ -200,18 +213,18 @@ def main():
     source_cnn = simpleCNN().to(device)
 
     # train target CNN
-    target_cnn = simpleCNN().to(device)
+    target_cnn = simpleCNN(target=True).to(device)
    
 
-    discriminator = Discriminator(args=args).to(args.device)
+    discriminator = Discriminator().to(device)
     criterion = nn.CrossEntropyLoss()
-    d_optimizer = optim.Adam(
+    d_optimizer = torch.optim.Adam(
         discriminator.parameters(),
-        lr=args.d_lr, betas=args.betas, weight_decay=args.weight_decay)
+        lr=0.001)
     best_acc, best_class, classNames = train_target_cnnP_domain(
         source_cnn, target_cnn, discriminator,
         criterion, optimizer, d_optimizer,
-        source_train_loader, target_conf_train_loader, target_val_loader,
+        source_train_loader, target_train_loader, target_test_loader,
         logger, args=args)
     bestClassWiseDict = {}
     for cls_idx, clss in enumerate(classNames):
@@ -221,7 +234,7 @@ def main():
     logger.info(bestClassWiseDict)
 
     # specify optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # # train
     # for epoch in range(1, 100):
@@ -233,4 +246,32 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    # NN
+    parser.add_argument('--in_channels', type=int, default=3)
+    parser.add_argument('--n_classes', type=int, default=3)
+    parser.add_argument('--trained', type=str, default='')
+    parser.add_argument('--slope', type=float, default=0.2)
+    # train
+    parser.add_argument('--lr', type=float, default=1e-5)
+    parser.add_argument('--d_lr', type=float, default=1e-3)
+    parser.add_argument('--weight_decay', type=float, default=2.5e-5)
+    parser.add_argument('--epochs', type=int, default=15)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--betas', type=float, nargs='+', default=(.5, .999))
+    parser.add_argument('--lam', type=float, default=0.25)
+    parser.add_argument('--thr', type=float, default=0.79)
+    parser.add_argument('--thr_domain', type=float, default=0.87)
+    parser.add_argument('--num_val', type=int, default=3)  # number of val. within each epoch
+    # misc
+    parser.add_argument('--device', type=str, default='cuda:1')
+    parser.add_argument('--n_workers', type=int, default=4)
+    parser.add_argument('--logdir', type=str, default='outputs/sgada_domain')
+    # office dataset categories
+    parser.add_argument('--src_cat', type=str, default='mscoco')
+    parser.add_argument('--tgt_cat', type=str, default='flir')
+    parser.add_argument('--tgt_conf_cat', type=str, default='flir_confident')
+    parser.add_argument('--message', type=str, default='altinel')  # to track parallel device outputs
+
+    args, unknown = parser.parse_known_args()
+    main(args)

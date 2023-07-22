@@ -126,9 +126,9 @@ def adversarial_domain(
         source_data = source_data.to(args.device)
         target_data = target_data.to(args.device)
         target_target = target_target.to(args.device)
-        target_conf = target_conf.to(args.device)
-        target_domain = target_domain.to(args.device)
-        target_domain_conf = target_domain_conf.to(args.device)
+        # target_conf = target_conf.to(args.device)
+        # target_domain = target_domain.to(args.device)
+        # target_domain_conf = target_domain_conf.to(args.device)
         bs = source_data.size(0)
 
         D_input_source = source_cnn.encoder(source_data)
@@ -154,12 +154,12 @@ def adversarial_domain(
         D_output_target = discriminator(D_input_target)
         D_output_target_P = target_cnn.classifier(D_input_target)
         lossT = criterion(D_output_target, D_target_source)
-        validSource = (target_domain == 0) & (target_conf >= args.thr)
-        validMaskSource = validSource.nonzero(as_tuple=False)[:, 0]
-        validTarget = (target_domain == 1) & (target_domain_conf <= args.thr_domain) & (target_conf >= args.thr)
-        validMaskTarget = validTarget.nonzero(as_tuple=False)[:, 0]
-        validIndexes = torch.cat((validMaskSource, validMaskTarget), 0)
-        lossP = criterion(D_output_target_P[validIndexes], target_target[validIndexes])
+        # validSource = (target_domain == 0) & (target_conf >= args.thr)
+        # validMaskSource = validSource.nonzero(as_tuple=False)[:, 0]
+        # validTarget = (target_domain == 1) & (target_domain_conf <= args.thr_domain) & (target_conf >= args.thr)
+        # validMaskTarget = validTarget.nonzero(as_tuple=False)[:, 0]
+        # validIndexes = torch.cat((validMaskSource, validMaskTarget), 0)
+        lossP = criterion(D_output_target_P, target_target)
         loss = lossT + args.lam*lossP
         optimizer.zero_grad()
         loss.backward()
