@@ -156,7 +156,8 @@ def preprocess_data(dataset):
     labelencoder = LabelEncoder()
     labels = labelencoder.fit_transform(np.char.strip(labels, '_0123456789'))
     labels = torch.Tensor(labels).to(torch.int64)
-  
+    class_info = {'classes': torch.unique(labels),
+                    'classNames': labelencoder.classes_}
     dataset = TensorDataset(data, labels)
 
     # split data
@@ -168,7 +169,8 @@ def preprocess_data(dataset):
     # data loader
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
-    return train_loader, test_loader
+
+    return train_loader, test_loader, class_info
 
 # main function
 def main(args):
@@ -195,8 +197,8 @@ def main(args):
     source_dataset = dm.get_dataset(experiments=[f'{subject:03d}_1_1'])
     target_datset = dm.get_dataset(experiments=[f'{subject:03d}_1_2'])
 
-    source_train_loader, source_test_loader = preprocess_data(source_dataset)
-    target_train_loader, target_test_loader = preprocess_data(target_datset)
+    source_train_loader, source_test_loader, class_info = preprocess_data(source_dataset)
+    target_train_loader, target_test_loader, _ = preprocess_data(target_datset)
 
     # for i in range(100):
     #     #generate images for the first 10 samples
@@ -205,8 +207,7 @@ def main(args):
     #     image = Image.fromarray(img, mode="L")
     #     image.save(f'../../data/doi_10/emg_test/001_1/{train_dataset[i][1]}/{i}.png')
 
-    args.classInfo = {'classes': torch.unique(torch.tensor(source_train_loader.dataset.targets)),
-                    'classNames': source_train_loader.dataset.classes}
+    args.classInfo = class_info
     # specify device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
