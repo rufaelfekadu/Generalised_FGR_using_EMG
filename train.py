@@ -26,10 +26,12 @@ from Source.fgr.data_manager import Data_Manager
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
-        self.fc1 = nn.Linear(20, 10)
+        self.fc1 = nn.Linear(40, 20)
+        self.fc2 = nn.Linear(20, 10)
 
     def forward(self, x):
-        x = self.fc1(x)
+        x = functional.relu(self.fc1(x))
+        x = functional.relu(self.fc2(x))
         x = functional.softmax(x, dim=1)
         return x
 
