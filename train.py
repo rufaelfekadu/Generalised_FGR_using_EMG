@@ -12,7 +12,7 @@ from torchvision import datasets, transforms
 from sklearn.preprocessing import LabelEncoder
 import logging
 from trainner import adversarial_domain, train_target_cnnP_domain
-
+import os
 import sys
 sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recognition')
 
@@ -174,13 +174,29 @@ def preprocess_data(dataset):
 
     return train_loader, test_loader, class_info
 
+def get_logger(log_file):
+    from logging import getLogger, FileHandler, StreamHandler, Formatter, DEBUG, INFO  # noqa
+    fh = FileHandler(log_file)
+    fh.setLevel(DEBUG)
+    sh = StreamHandler()
+    sh.setLevel(INFO)
+    for handler in [fh, sh]:
+        formatter = Formatter('%(asctime)s - %(message)s')
+        handler.setFormatter(formatter)
+    logger = getLogger('adda')
+    logger.setLevel(INFO)
+    logger.addHandler(fh)
+    logger.addHandler(sh)
+    return logger
+
 # main function
 def main(args):
 
     # data_dir = '../data/doi_10/emg'
 
 
-    logger = logging.getLogger(__name__)
+    logger = get_logger(os.path.join(args.logdir, 'train_sgada.log'))
+    logger.info(args)
     # get data
     train_transform = transforms.Compose([
                     transforms.Grayscale(),
@@ -248,7 +264,7 @@ def main(args):
     #     train(model, device, train_loader, optimizer, epoch)
     #     test(model, test_loader, device=device)
 
-    adversarial_domain()
+    # adversarial_domain()
 
 
 
