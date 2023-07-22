@@ -214,13 +214,16 @@ def main(args):
 
     # train target CNN
     target_cnn = simpleCNN(target=True).to(device)
-   
+    optimizer = torch.optim.Adam(
+            target_cnn.encoder.parameters(), 
+            lr=args.lr, betas=args.betas, 
+            weight_decay=args.weight_decay)
 
     discriminator = Discriminator().to(device)
     criterion = nn.CrossEntropyLoss()
-    d_optimizer = torch.optim.Adam(
-        discriminator.parameters(),
-        lr=0.001)
+    d_optimizer = optim.Adam(
+            discriminator.parameters(),
+            lr=args.d_lr, betas=args.betas, weight_decay=args.weight_decay)
     best_acc, best_class, classNames = train_target_cnnP_domain(
         source_cnn, target_cnn, discriminator,
         criterion, optimizer, d_optimizer,
