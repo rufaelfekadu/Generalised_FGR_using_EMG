@@ -205,7 +205,8 @@ def main(args):
     #     image = Image.fromarray(img, mode="L")
     #     image.save(f'../../data/doi_10/emg_test/001_1/{train_dataset[i][1]}/{i}.png')
 
-
+    args.classInfo = {'classes': torch.unique(torch.tensor(source_train_loader.dataset.targets)),
+                    'classNames': source_train_loader.dataset.classes}
     # specify device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
