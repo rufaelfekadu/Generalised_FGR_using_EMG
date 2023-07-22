@@ -273,7 +273,7 @@ if __name__ == '__main__':
     # misc
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--n_workers', type=int, default=4)
-    parser.add_argument('--logdir', type=str, default='outputs/sgada_domain')
+    parser.add_argument('--logdir', type=str, default='outputs/')
     # office dataset categories
     parser.add_argument('--src_cat', type=str, default='mscoco')
     parser.add_argument('--tgt_cat', type=str, default='flir')
@@ -281,4 +281,5 @@ if __name__ == '__main__':
     parser.add_argument('--message', type=str, default='altinel')  # to track parallel device outputs
 
     args, unknown = parser.parse_known_args()
+    Path(args.logdir).mkdir(parents=True, exist_ok=True)
     main(args)
