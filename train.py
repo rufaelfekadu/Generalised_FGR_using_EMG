@@ -169,8 +169,8 @@ def preprocess_data(dataset):
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
     # data loader
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=96, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=96, shuffle=True)
 
     return train_loader, test_loader, class_info
 
