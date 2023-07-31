@@ -12,6 +12,7 @@ from torchvision import datasets, transforms
 from sklearn.preprocessing import LabelEncoder
 import logging
 from trainner import adversarial_domain, train_target_cnnP_domain
+from utils import preprocess_data, get_logger
 import os
 import sys
 sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recognition')
@@ -149,45 +150,9 @@ def test(model, test_loader, device):
 
     return correct/total
 
-def preprocess_data(dataset):
 
-    data = dataset[0]
-    labels = dataset[1]
 
-    data = torch.Tensor(data)
-    labelencoder = LabelEncoder()
-    labels = labelencoder.fit_transform(np.char.strip(labels, '_0123456789'))
-    labels = torch.Tensor(labels).to(torch.int64)
-    class_info = {'classes': torch.unique(labels),
-                    'classNames': labelencoder.classes_}
-    dataset = TensorDataset(data, labels)
 
-    # split data
-    train_size = int(0.8 * len(dataset))
-    test_size = len(dataset) - train_size
-
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
-    # data loader
-    train_loader = DataLoader(train_dataset, batch_size=96, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=96, shuffle=True)
-
-    return train_loader, test_loader, class_info
-
-def get_logger(log_file):
-    from logging import getLogger, FileHandler, StreamHandler, Formatter, DEBUG, INFO  # noqa
-    fh = FileHandler(log_file)
-    fh.setLevel(DEBUG)
-    sh = StreamHandler()
-    sh.setLevel(INFO)
-    for handler in [fh, sh]:
-        formatter = Formatter('%(asctime)s - %(message)s')
-        handler.setFormatter(formatter)
-    logger = getLogger('adda')
-    logger.setLevel(INFO)
-    logger.addHandler(fh)
-    logger.addHandler(sh)
-    return logger
 
 # main function
 def main(args):

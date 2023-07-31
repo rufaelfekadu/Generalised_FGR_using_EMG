@@ -241,3 +241,54 @@ def validate(model, dataloader, criterion, args=None):
     return {
         'loss': losses.avg, 'acc': acc, 'avgAcc': avgAcc, 'classAcc': class_acc, 'classNames': classNames,
     }
+
+#training loop
+def train(model,
+          train_loader,
+          test_loader,
+            criterion,
+            optimizer,
+            args,
+            logger,
+          ):
+    
+    logger.info('Start training...')
+    best_score = None
+    best_class_score = None
+    for epoch_i in range(args.epochs):
+        train_loss = train_epoch(model, train_loader, criterion, optimizer, args, epoch_i)
+        validation = validate(model, test_loader, criterion, args=args)
+        clsNames = validation['classNames']
+        is_best = (best_score is None or validation['avgAcc'] > best_score)
+        best_score = validation['avgAcc'] if is_best else best_score
+        best_class_score = validation['classAcc'] if is_best else best_class_score
+        
+        if args.save_freq > 0 and epoch_i % args.save_freq == 0:
+            state_dict = {
+                'model': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'epoch': epoch_i,
+                'val/acc': best_score,
+                }
+            save(args.logdir, state_dict, is_best)
+        logger.info('Epoch_{}'.format(epoch_i))
+        for cls_idx, clss in enumerate(clsNames):
+            logger.info('{}: {}'.format(clss, validation['classAcc'][cls_idx]))
+        logger.info('Current val. acc.: {}'.format(validation['avgAcc']))
+        logger.info('Best val. acc.: {}'.format(best_score))
+        classWiseDict = {}
+        for cls_idx, clss in enumerate(clsNames):
+            classWiseDict[clss] = validation['classAcc'][cls_idx].item()
+    return {'train/loss': train_loss, 'val/acc': best_score, 'val/classAcc': best_class_score}
+
+def train_epoch(model, train_loader, criterion, optimizer, args, epoch_i):
+    model.train()
+    losses = AverageMeter()
+    for iter_i, (data, target) in enumerate(train_loader):
+        bs = target.size(0)
+        output, loss = step(model, data, target, criterion, args)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        losses.update(loss.item(), bs)
+    return losses.avg
