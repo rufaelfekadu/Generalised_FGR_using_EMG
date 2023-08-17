@@ -22,7 +22,8 @@ def preprocess_data(dataset):
     test_size = len(dataset) - train_size
 
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
+    # save test data
+    # torch.save(test_dataset, 'outputs/test_dataset_cnn.pt')
     # data loader
     train_loader = DataLoader(train_dataset, batch_size=96, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=96, shuffle=True)
@@ -46,11 +47,24 @@ def get_logger(log_file):
 
 def arg_parse():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('--model', type=str, default='transformer')
     # NN
     parser.add_argument('--in_channels', type=int, default=3)
-    parser.add_argument('--n_classes', type=int, default=3)
+    parser.add_argument('--n_classes', type=int, default=10)
     parser.add_argument('--trained', type=str, default='')
     parser.add_argument('--slope', type=float, default=0.2)
+
+    #transformer
+    parser.add_argument('--image_size', type=int, default=4)
+    parser.add_argument('--patch_size', type=int, default=2)
+    parser.add_argument('--hidden_dim', type=int, default=16)
+    parser.add_argument('--num_heads', type=int, default=4)
+    parser.add_argument('--num_layers', type=int, default=2)
+    parser.add_argument('--dropout', type=float, default=0.1)
+    parser.add_argument('--num_classes', type=int, default=10)
+    parser.add_argument('--attention_dropout', type=float, default=0.1)
+
     # train
     parser.add_argument('--lr', type=float, default=1e-5)
     parser.add_argument('--d_lr', type=float, default=1e-3)
