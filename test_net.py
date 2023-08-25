@@ -18,7 +18,7 @@ from Source.fgr.data_manager import Data_Manager
 from models import make_model, vision, Net
 from dataset import emgdata
 
-from utils import preprocess_data,get_logger
+from utils import preprocess_data,get_logger, AverageMeter
 import os
 
 #set seed
@@ -34,39 +34,60 @@ torch.manual_seed(seed)
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
     correct = 0
+    accuracy = AverageMeter()
+    train_loss = AverageMeter()
     for batch_idx, (data, (target, _)) in enumerate(train_loader): # data: (batch_size, 3, 512, 512)
+
         data, target = data.to(device), target.to(device)
+
+        #forward step
         optimizer.zero_grad() # set gradient to zero
         output = model(data) # output: (batch_size, 10)
+
+        #backward step
         loss = torch.nn.functional.cross_entropy(output, target) # loss: (batch_size)
         loss.backward() # back propagation
         optimizer.step() # update parameters
+
         pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
-        correct += pred.eq(target.view_as(pred)).sum().item() # sum up correct predictions
+        # correct += pred.eq(target.view_as(pred)).sum().item() # sum up correct predictions
 
+        accuracy.update(pred.eq(target.view_as(pred)).sum().item(), data.size(0))
+        train_loss.update(loss.item(), data.size(0))
 
-    # print('Train Epoch: {} \tLoss: {:.6f} \tAccuracy: {}/{} ({:.00f}%)'.format(
-    #     epoch, loss.item(), correct, len(train_loader.dataset),
-    #     100. * correct / len(train_loader.dataset)))
-    return correct/len(train_loader.dataset), loss.item()
+    output = {
+        'accuracy': accuracy,
+        'loss': train_loss
+    }
+
+    return output
     
 def test(model, test_loader, device):
     model.eval()
-    test_loss = 0
+    test_loss = AverageMeter()
+    accuracy = AverageMeter()
     correct = 0
     total = 0
+
     with torch.no_grad(): # no gradient calculation
         for data, (target,_) in test_loader:
+
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += torch.nn.functional.cross_entropy(output, target, reduction='sum').item()
-            pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item() # sum up correct predictions
-            total += target.size(0)
-    test_loss /= len(test_loader.dataset)
-    # print('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.00f}%)\n'.format(test_loss, correct, total, (correct/total)*100) )# print loss and accuracy
 
-    return correct/total, test_loss
+            loss = torch.nn.functional.cross_entropy(output, target, reduction='sum').item()
+
+            pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
+            # correct += pred.eq(target.view_as(pred)).sum().item() # sum up correct predictions
+            accuracy.update(pred.eq(target.view_as(pred)).sum().item(), data.size(0))
+            test_loss.update(loss.item(), data.size(0))
+            
+    # print('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.00f}%)\n'.format(test_loss, correct, total, (correct/total)*100) )# print loss and accuracy
+    output = {
+        'accuracy': accuracy,
+        'loss': test_loss
+    }
+    return output
 
 
 def main():
