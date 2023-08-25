@@ -1,7 +1,6 @@
 from .cnn import Net, simpleMLP
-from .transformer import vision
-from .adv_network import get_adv
-
+from .adv_network import get_adv, Classifier, FeatureExtractor
+from .transformer import VisionTransformer as vision
 def make_model(args):
     if args.model == 'transformer':
         return vision(image_size=args.image_size,

@@ -3,9 +3,9 @@ from torch import  nn
 from torch.nn import functional
 import random
 
-class Discriminator(nn.Module):
-    def __init__(self):
-        super(Discriminator, self).__init__()
+class Classifier(nn.Module):
+    def __init__(self, num_classes: int = 10):
+        super(Classifier, self).__init__()
         self.fc1 = nn.Linear(40, 20)
         self.fc2 = nn.Linear(20, 10)
 
@@ -14,7 +14,35 @@ class Discriminator(nn.Module):
         x = functional.relu(self.fc2(x))
         x = functional.softmax(x, dim=1)
         return x
+    
+class FeatureExtractor(nn.Module):
+    def __init__(self, dropout_rate: float = 0.3, target=False):
+            super().__init__()
+            self.dropout_rate = dropout_rate
 
+            self.encoder = nn.Sequential(
+                 nn.Conv2d(1, 2, 2, padding='same'),
+                    nn.BatchNorm2d(2),
+                    nn.ReLU(),
+                    nn.Conv2d(2, 4, 2, padding='same'),
+                    nn.BatchNorm2d(4),
+                    nn.ReLU(),
+                    nn.Flatten(),
+                    nn.Linear(4*4*4, 40),
+                    nn.BatchNorm1d(40),
+                    nn.ReLU(),
+                    nn.Dropout(p=self.dropout_rate))
+    def forward(self, x):
+        # add white gaussian noise to the input only during training
+        if self.training and random.random() < 0:
+            noise = torch.randn(x.shape) * 0.1 * (float(torch.max(x)) - float(torch.min(x)))
+            noise = noise.to(x.device)
+            x = x + noise
+        x = self.encoder(x)
+        return x
+
+
+            
 # specify model
 class simpleCNN(torch.nn.Module):
     def __init__(self, num_classes: int = 10, dropout_rate: float = 0.3, target=False):
@@ -97,6 +125,6 @@ def get_adv(args):
 
     source_cnn = simpleCNN(num_classes=args.num_classes, dropout_rate=args.dropout_rate, target=args.target)
     target_cnn = simpleCNN(num_classes=args.num_classes, dropout_rate=args.dropout_rate, target=args.target)
-    discriminator = Discriminator()
+    discriminator = Classifier()
 
     return source_cnn.to(args.device), target_cnn.to(args.device), discriminator.to(args.device)

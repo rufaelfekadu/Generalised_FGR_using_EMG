@@ -1,71 +1,132 @@
 import pandas as pd
-import random
 from pathlib import Path
-import matplotlib.pyplot as plt
-from PIL import Image
 import argparse
 import torch
 from torch import nn
-import torch.nn.functional as functional
 from torch.utils.data import DataLoader, Dataset, TensorDataset
-from torchvision import datasets, transforms
-from sklearn.preprocessing import LabelEncoder
-import logging
-from trainner import adversarial_domain, train_target_cnnP_domain
-from utils import preprocess_data, get_logger
+
+from utils import preprocess_data, get_logger, AverageMeter
 import os
 import sys
 sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recognition')
 
 # import data stuff
 import numpy as np
-import Source.fgr.models as models
+from dataset import emgdata, load_saved_data
+# import Source.fgr.models as models
 
 from Source.fgr.pipelines import Data_Pipeline
 from Source.fgr.data_manager import Data_Manager
 
+from models import make_model, vision, Net, Classifier, simpleMLP, FeatureExtractor
 
-#import model stuff
+# train_epoch function
+def train_epoch(model, device, train_loader, optimizer, criterion, epoch):
+    # model.train()
+    feature_exteractor_optimizer, classifier_optimizer, discriminator_optimizer = optimizer
+    feature_extractor, classifier, discriminator = model
+    classifier_loss, adverserial_loss = criterion
 
-from models import make_model
-    
+    feature_extractor.train()
+    classifier.train()
+    discriminator.train()
 
 
 
-# train function
-def train(model, device, train_loader, optimizer, epoch):
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader): # data: (batch_size, 3, 512, 512)
-        data, target = data.to(device), target.to(device)
-        optimizer.zero_grad() # set gradient to zero
-        output = model(data) # output: (batch_size, 10)
-        loss = torch.nn.functional.cross_entropy(output, target) # loss: (batch_size)
+    total_loss = AverageMeter()
+    discriminator_loss = AverageMeter()
+    accuracy = AverageMeter()
+    class_loss = AverageMeter()
+
+    for batch_idx, (data, (target, pos)) in enumerate(train_loader): # data: (batch_size, 3, 512, 512)
+        correct = 0
+        data, target, pos = data.to(device), target.to(device), pos.to(device)
+
+        feature_exteractor_optimizer.zero_grad() # set gradient to zero
+        classifier_optimizer.zero_grad() # set gradient to zero
+        discriminator_optimizer.zero_grad() # set gradient to zero
+
+        #forward pass
+        feature = feature_extractor(data)
+
+        # train discriminator
+        domain_output = discriminator(feature.detach())
+        domain_loss = adverserial_loss(domain_output, pos)
+
+        # train classifier
+        class_output = classifier(feature)
+        classification_loss = classifier_loss(class_output, target) # loss: (batch_size)
+        class_loss.update(classification_loss.item(), data.size(0))
+
+        loss = classification_loss +0.4*domain_loss
+        total_loss.update(loss.item(), data.size(0))
+
         loss.backward() # back propagation
-        optimizer.step() # update parameters
+        feature_exteractor_optimizer.step() # update parameters
+        classifier_optimizer.step() # update parameters
 
-    print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format( # print loss
-        epoch, batch_idx * len(data), len(train_loader.dataset),
-        100. * batch_idx / len(train_loader), loss.item()))
+        #train_discriminator
+        discriminator_optimizer.zero_grad() # set gradient to zero
+        domain_output = discriminator(feature.detach())
+        domain_loss = adverserial_loss(domain_output, pos)
+        discriminator_loss.update(domain_loss.item(), data.size(0))
+        domain_loss.backward()
+        discriminator_optimizer.step()
 
-def test(model, test_loader, device):
-    model.eval()
-    test_loss = 0
-    correct = 0
-    total = 0
+        pred = class_output.argmax(dim=1, keepdim=True)
+        correct = pred.eq(target.view_as(pred)).sum().item()
+        accuracy.update(correct, data.size(0))
+
+    # print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format( # print loss
+    #     epoch, batch_idx * len(data), len(train_loader.dataset),
+    #     100. * batch_idx / len(train_loader), loss.item()))
+    
+    output = {
+        "classifier_loss": class_loss.avg,
+        "total_loss": total_loss.avg,
+        "discriminator_loss": discriminator_loss.avg,
+        "train_acc": accuracy.avg,
+    }
+    
+    return output
+
+def test(model, test_loader, device, criterion):
+
+    feature_extractor, classifier, discriminator = model
+
+    feature_extractor.eval()
+    classifier.eval()
+    discriminator.eval()
+
+    test_accuracy = AverageMeter()
+    test_loss = AverageMeter()
+    test_disc_accuracy = AverageMeter()
+
     with torch.no_grad(): # no gradient calculation
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            test_loss += torch.nn.functional.cross_entropy(output, target, reduction='sum').item()
+        for data, (target,pos) in test_loader:
+
+            data, target, pos = data.to(device), target.to(device), pos.to(device)
+
+            #forward pass
+            feat = feature_extractor(data)
+            output = classifier(feat)
+            disc_output = discriminator(feat)
+
             pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item() # sum up correct predictions
-            total += target.size(0)
-    test_loss /= len(test_loader.dataset)
-    print('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.00f}%)\n'.format(test_loss, correct, total, (correct/total)*100) )# print loss and accuracy
+            disc_pred = disc_output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
 
-    return correct/total
+            test_accuracy.update(pred.eq(target.view_as(pred)).sum().item(), data.size(0))
+            test_loss.update(criterion(output, target).item(), data.size(0))
+            test_disc_accuracy.update(disc_pred.eq(pos.view_as(disc_pred)).sum().item(), data.size(0))
 
-
+    # test_loss /= len(test_loader.dataset)
+    # print('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.00f}%)\n'.format(test_loss, correct, total, (correct/total)*100) )# print loss and accuracy
+    output = {
+        "test_class_loss": test_loss,
+        "test_acc": test_accuracy,
+        "test_disc_acc": test_disc_accuracy,
+    }
+    return output
 
 
 
@@ -74,77 +135,66 @@ def main(args):
 
     # data_dir = '../data/doi_10/emg'
 
-
-    logger = get_logger(os.path.join(args.logdir, 'train_sgada.log'))
+    #setup logger
+    logger = get_logger(os.path.join(args.logdir, 'adv_train.log'))
     logger.info(args)
-    # get data
-    train_transform = transforms.Compose([
-                    transforms.Grayscale(),
-                    transforms.ToTensor(),
-                ])
-            
-    # dataset = datasets.ImageFolder(data_dir+'/001_1', transform=train_transform)
     
-    # pipeline definition and data manager creation
-    data_path = Path('../data/doi_10')
-    pipeline = Data_Pipeline(base_data_files_path=data_path)  # configure the data pipeline you would like to use (check pipelines module for more info)
-    subject = 1
-    dm = Data_Manager([subject], pipeline)
-    print(dm.data_info())
+    #load data
+    train_data =  load_saved_data('./outputs/train_data.pt')
+    test_data = load_saved_data('./outputs/test_data.pt')
 
-    source_dataset = dm.get_dataset(experiments=[f'{subject:03d}_1_1'])
-    target_datset = dm.get_dataset(experiments=[f'{subject:03d}_1_2'])
+    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
+    test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
 
-    source_train_loader, source_test_loader, class_info = preprocess_data(source_dataset)
-    target_train_loader, target_test_loader, _ = preprocess_data(target_datset)
-
-    # for i in range(100):
-    #     #generate images for the first 10 samples
-    #     Path(f'../../data/doi_10/emg_test/001_1/{train_dataset[i][1]}').mkdir(parents=True, exist_ok=True)
-    #     img = train_dataset[i][0].numpy().reshape(4,4)
-    #     image = Image.fromarray(img, mode="L")
-    #     image.save(f'../../data/doi_10/emg_test/001_1/{train_dataset[i][1]}/{i}.png')
-
-    args.classInfo = class_info
     # specify device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # define models
+    feature_extractor = FeatureExtractor()
+    discriminator = Classifier(num_classes=3)
+    classifier = Classifier()
 
-    source_cnn = simpleCNN().to(device)
-
-    # train target CNN
-    target_cnn = simpleCNN(target=True).to(device)
-    optimizer = torch.optim.Adam(
-            target_cnn.encoder.parameters(), 
+    # define optimizers
+    feature_extractor_optimizer = torch.optim.Adam(
+            feature_extractor.parameters(), 
             lr=args.lr, betas=args.betas, 
             weight_decay=args.weight_decay)
+    classifier_optimizer = torch.optim.Adam(
+            classifier.parameters(), 
+            lr=args.lr, betas=args.betas, 
+            weight_decay=args.weight_decay)
+    discriminator_optimizer = torch.optim.Adam(
+            discriminator.parameters(), 
+            lr=args.lr, betas=args.betas, 
+            weight_decay=args.weight_decay)
+    
+    # define loss functions
+    adverserial_loss = nn.CrossEntropyLoss()
+    classifier_loss = nn.CrossEntropyLoss()
 
-    discriminator = Discriminator().to(device)
-    criterion = nn.CrossEntropyLoss()
-    d_optimizer = torch.optim.Adam(
-            discriminator.parameters(),
-            lr=args.d_lr, betas=args.betas, weight_decay=args.weight_decay)
-    best_acc, best_class, classNames = train_target_cnnP_domain(
-        source_cnn, target_cnn, discriminator,
-        criterion, optimizer, d_optimizer,
-        source_train_loader, target_train_loader, target_test_loader,
-        logger, args=args)
-    bestClassWiseDict = {}
-    for cls_idx, clss in enumerate(classNames):
-        bestClassWiseDict[clss] = best_class[cls_idx].item()
-    logger.info('Best acc.: {}'.format(best_acc))
-    logger.info('Best acc. (Classwise):')
-    logger.info(bestClassWiseDict)
+    # define model
+    model = (feature_extractor.to(device), classifier.to(device), discriminator.to(device))
+    optimizer = (feature_extractor_optimizer, classifier_optimizer, discriminator_optimizer)
+    criterion = (classifier_loss, adverserial_loss)
 
-    # specify optimizer
-    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    #train
+    for epoch in range(1, args.epochs + 1):
 
-    # # train
-    # for epoch in range(1, 100):
-    #     train(model, device, train_loader, optimizer, epoch)
-    #     test(model, test_loader, device=device)
+        train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
 
-    # adversarial_domain()
+        if epoch % 10 == 0:
+            logger.info('Train Epoch: {} \tTotal Loss: {:.4f}\tDiscriminator Loss: {:.4f}\tAccuracy: {:.2f}%'.format(
+                epoch, train_output["total_loss"], train_output["discriminator_loss"], train_output["train_acc"]*100))
+                    
+            test_output = test(model, test_loader, device=device, criterion=criterion[0])
+            logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%) Dicriminator Accuracy: {:.2f}%'.format(
+                test_output["test_class_loss"].avg, test_output["test_acc"].sum, len(test_loader.dataset), (test_output["test_acc"].avg)*100, test_output["test_disc_acc"].avg*100))
+        
+    #save model
+    torch.save(feature_extractor, os.path.join(args.logdir,'feature_extractor.pt'))
+    torch.save(classifier, os.path.join(args.logdir,'classifier.pt'))
+    torch.save(discriminator, os.path.join(args.logdir,'discriminator.pt'))
+
 
 
 
@@ -159,7 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-5)
     parser.add_argument('--d_lr', type=float, default=1e-3)
     parser.add_argument('--weight_decay', type=float, default=2.5e-5)
-    parser.add_argument('--epochs', type=int, default=15)
+    parser.add_argument('--epochs', type=int, default=400)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--betas', type=float, nargs='+', default=(.5, .999))
     parser.add_argument('--lam', type=float, default=0.25)
@@ -169,7 +219,7 @@ if __name__ == '__main__':
     # misc
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--n_workers', type=int, default=4)
-    parser.add_argument('--logdir', type=str, default='outputs/')
+    parser.add_argument('--logdir', type=str, default='outputs/adv_model')
     # office dataset categories
     parser.add_argument('--src_cat', type=str, default='mscoco')
     parser.add_argument('--tgt_cat', type=str, default='flir')

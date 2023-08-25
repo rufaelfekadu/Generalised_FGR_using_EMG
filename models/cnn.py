@@ -19,7 +19,7 @@ class Net(nn.Module):
         self.batch_norm_4 = nn.BatchNorm1d(20)
         self.fc_3 = nn.Linear(20, num_classes)
 
-    def forward(self, x):
+    def forward(self, x, feat=False):
         # add white gaussian noise to the input only during training
         if self.training and random.random() < 0:  # % chance to add noise to the batch (adjust to your needs)
             noise = torch.randn(x.shape) * 0.1 * (float(torch.max(x)) - float(torch.min(x)))  # up to 10% noise
@@ -35,6 +35,8 @@ class Net(nn.Module):
         x = functional.relu(x)
         x = torch.flatten(x, 1)
         x = self.fc_1(x)
+        if feat:
+            return x
         x = self.batch_norm_3(x)
         x = functional.relu(x)
         x = functional.dropout(x, p=self.dropout_rate, training=self.training)
