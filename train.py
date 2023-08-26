@@ -94,7 +94,7 @@ def main(args):
     test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
 
 
-    model = Net(num_classes=10, dropout_rate=0.3).to(device)
+    model = Net(num_classes=10).to(device)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(
                     model.parameters(),

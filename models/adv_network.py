@@ -6,6 +6,7 @@ import random
 class Net(nn.Module):
     def __init__(self, num_classes: int = 10):
         super(Net, self).__init__()
+        self.dropout_rate = 0.3
         self.encoder = nn.Sequential(
                  nn.Conv2d(1, 2, 2, padding='same'),
                     nn.BatchNorm2d(2),
