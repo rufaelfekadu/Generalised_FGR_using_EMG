@@ -72,8 +72,8 @@ def test(model, test_loader, device, criterion):
             test_loss.update(criterion(output, target).item(), data.size(0))
 
     output = {
-        "test_loss": test_loss.avg,
-        "test_acc": test_accuracy.avg,
+        "test_loss": test_loss,
+        "test_acc": test_accuracy,
     }
 
     return output
@@ -104,12 +104,18 @@ def main(args):
                     lr=args.lr, betas=args.betas, weight_decay=args.weight_decay)
    
     
-    for i in range(1,args.epochs+1):
-        train_epoch(model, device, train_loader, optimizer, criterion, i)
+    for epoch in range(1,args.epochs+1):
 
-        if i % args.test_freq == 0:
-            test(model, test_loader, device, criterion=criterion)
-
+        train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
+        
+        if epoch % args.test_freq == 0:
+            logger.info('Train Epoch: {} \tTotal Loss: {:.4f}\tAccuracy: {:.2f}%'.format(
+                epoch, train_output["total_loss"], train_output["train_acc"]*100))
+                    
+            test_output = test(model, test_loader, device=device, criterion=criterion)
+            logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
+                test_output["test_loss"].avg, test_output["test_acc"].sum, len(test_loader.dataset), (test_output["test_acc"].avg)*100))
+        
 if __name__ == '__main__':
     args = arg_parse()
     main(args)
