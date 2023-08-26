@@ -65,10 +65,10 @@ class FeatureExtractor(nn.Module):
             self.dropout_rate = dropout_rate
 
             self.encoder = nn.Sequential(
-                 nn.Conv2d(1, 2, 2, padding='same'),
+                 nn.Conv2d(1, 2, 2),
                     nn.BatchNorm2d(2),
                     nn.ReLU(),
-                    nn.Conv2d(2, 4, 2, padding='same'),
+                    nn.Conv2d(2, 4, 2),
                     nn.BatchNorm2d(4),
                     nn.ReLU(),
                     nn.Flatten(),
