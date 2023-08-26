@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 #import model stuff
 from models import make_model, Net
+import numpy as np
 
 #import data stuff
 import sys
@@ -18,6 +19,10 @@ from trainner import Trainner
 from torch.utils.data import DataLoader
 import warnings
 warnings.filterwarnings("ignore")
+
+# set random seed
+torch.manual_seed(0)
+np.random.seed(0)
 
 
 
