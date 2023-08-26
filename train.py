@@ -69,7 +69,7 @@ def test(model, test_loader, device, criterion):
             pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
 
             test_accuracy.update(pred.eq(target.view_as(pred)).sum().item(), data.size(0))
-            test_loss.update(criterion(output, target, reduction='sum').item(), data.size(0))
+            test_loss.update(criterion(output, target).item(), data.size(0))
 
     output = {
         "test_loss": test_loss.avg,
