@@ -53,11 +53,7 @@ def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
         domain_loss = adverserial_loss(domain_output, pos)
         discriminator_loss.update(domain_loss.item(), data.size(0))
 
-        if epoch%args.disc_train_freq == 0:
-            # train discriminator
-            discriminator_optimizer.zero_grad() # set gradient to zero
-            domain_loss.backward()
-            discriminator_optimizer.step()
+        
 
         # train classifier
         classifier_optimizer.zero_grad() # set gradient to zero
@@ -70,6 +66,14 @@ def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
 
         loss.backward() # back propagation
         classifier_optimizer.step() # update parameters
+
+        if epoch%args.disc_train_freq == 0:
+            # train discriminator
+            discriminator_optimizer.zero_grad() # set gradient to zero
+            domain_output = discriminator(feature.detach())
+            domain_loss = adverserial_loss(domain_output, pos)
+            domain_loss.backward()
+            discriminator_optimizer.step() # update parameters
 
         pred = class_output.argmax(dim=1, keepdim=True)
         correct = pred.eq(target.view_as(pred)).sum().item()
