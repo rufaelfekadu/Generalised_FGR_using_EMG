@@ -42,8 +42,10 @@ def train_epoch(model, device, train_loader, optimizer, criterion, epoch):
         loss.backward() # back propagation
         optimizer.step() # update parameters
 
+        pred = output.argmax(dim=1, keepdim=True)
+        correct = pred.eq(target.view_as(pred)).sum().item()
 
-        accuracy.update(output.argmax(dim=1, keepdim=True).eq(target.view_as(output)).sum().item(), data.size(0))
+        accuracy.update(correct, data.size(0))
     
     output = {
         "train_loss": total_loss.avg,
@@ -95,6 +97,7 @@ def main(args):
 
 
     model = Net(num_classes=10).to(device)
+
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(
                     model.parameters(),

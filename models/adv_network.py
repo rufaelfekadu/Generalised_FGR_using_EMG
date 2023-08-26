@@ -6,7 +6,9 @@ import random
 class Net(nn.Module):
     def __init__(self, num_classes: int = 10):
         super(Net, self).__init__()
+
         self.dropout_rate = 0.3
+
         self.encoder = nn.Sequential(
                  nn.Conv2d(1, 2, 2, padding='same'),
                     nn.BatchNorm2d(2),
@@ -19,6 +21,7 @@ class Net(nn.Module):
                     nn.BatchNorm1d(40),
                     nn.ReLU(),
                     nn.Dropout(p=self.dropout_rate))
+        
         self.classifier = nn.Sequential(
                 nn.Linear(40, 20),
                 nn.BatchNorm1d(20),
@@ -27,6 +30,7 @@ class Net(nn.Module):
                 nn.Linear(20, num_classes),
                 nn.Softmax(dim=1)
             )
+        
     def forward(self, x, feat=False):
         # add white gaussian noise to the input only during training
         if self.training and random.random() < 0:  # % chance to add noise to the batch (adjust to your needs)
