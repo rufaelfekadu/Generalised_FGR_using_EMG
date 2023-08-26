@@ -117,5 +117,8 @@ def main(args):
                 test_output["test_loss"].avg, test_output["test_acc"].sum, len(test_loader.dataset), (test_output["test_acc"].avg)*100))
         
 if __name__ == '__main__':
+
     args = arg_parse()
+    Path(args.logdir).mkdir(parents=True, exist_ok=True)
+    
     main(args)
