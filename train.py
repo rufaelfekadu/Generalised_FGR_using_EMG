@@ -84,7 +84,7 @@ def test(model, test_loader, device, criterion):
 def main(args):
             
     #setup logger
-    logger = get_logger(os.path.join(args.logdir, 'adv_train.log'))
+    logger = get_logger(os.path.join(args.logdir, 'cnn.log'))
     logger.info(args)
 
     #setup device
@@ -113,9 +113,9 @@ def main(args):
         train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
         log_string = ""
         if epoch % args.test_freq == 0:
-            log_string = '{:<20} {:^20.4f} \t{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
+            log_string = '{:<20}{:^20.4f}{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
             test_output = test(model, test_loader, device=device, criterion=criterion)
-            log_string += '\t{:^20.4f} \t{:>10.2f}\n'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
+            log_string += '{:^20.4f}{:>10.2f}'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
             logger.info(log_string)
         
 if __name__ == '__main__':
