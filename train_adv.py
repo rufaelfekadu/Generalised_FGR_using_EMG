@@ -29,7 +29,7 @@ from models import make_model, vision, Net, Classifier, simpleMLP, FeatureExtrac
 def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
     # model.train()
     classifier_optimizer, discriminator_optimizer = optimizer
-    feature_extractor, classifier, discriminator = model
+    classifier, discriminator = model
     classifier_loss, adverserial_loss = criterion
 
     classifier.train()
@@ -87,9 +87,8 @@ def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
 
 def test(model, test_loader, device, criterion):
 
-    feature_extractor, classifier, discriminator = model
+    classifier, discriminator = model
 
-    feature_extractor.eval()
     classifier.eval()
     discriminator.eval()
 
