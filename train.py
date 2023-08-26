@@ -107,19 +107,13 @@ def main(args):
     for epoch in range(1,args.epochs+1):
 
         train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
+        logger.log('Epoch \tTrain Loss \tTrain Accuracy \tTest Loss \tTest Accuracy')
         log_string = ""
         if epoch % args.test_freq == 0:
-            log_string = 'Train Epoch: {} \tAverage Loss: {:.4f}\tTrain Accuracy: {:.2f}%'.format(
-                epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
-            # logger.info('Train Epoch: {} \tTotal Loss: {:.4f}\tAccuracy: {:.2f}%'.format(
-            #     epoch, train_output["train_loss"], train_output["train_acc"]*100))
-                    
+            log_string = '{} \t{:.4f} \t{:.4f} \t{:.2f} \t{:.2f} '.format(epoch, train_output["train_loss"], train_output["train_acc"]*100)
+        
             test_output = test(model, test_loader, device=device, criterion=criterion)
-            log_string += '\nTest set: Average Test loss: {:.4f}\tTestAccuracy: {}/{} ({:.2f}%)'.format(
-                test_output["test_loss"].avg, test_output["test_acc"].sum, len(test_loader.dataset), (test_output["test_acc"].avg)*100)
-            
-            # logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
-            #     test_output["test_loss"].avg, test_output["test_acc"].sum, len(test_loader.dataset), (test_output["test_acc"].avg)*100))
+            log_string += '\t{:.4f} \t{:.2f}\n'.format(test_output["test_loss"], test_output["test_acc"]*100)
             logger.info(log_string)
         
 if __name__ == '__main__':
