@@ -89,8 +89,8 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     #load data
-    train_data =  load_saved_data('./outputs/train_data.pt')
-    test_data = load_saved_data('./outputs/test_data.pt')
+    train_data =  load_saved_data(args.data_path+'/train_data.pt')
+    test_data = load_saved_data(args.data_path+'/test_data.pt')
 
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
     test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
@@ -120,5 +120,5 @@ if __name__ == '__main__':
 
     args = arg_parse()
     Path(args.logdir).mkdir(parents=True, exist_ok=True)
-    
+
     main(args)
