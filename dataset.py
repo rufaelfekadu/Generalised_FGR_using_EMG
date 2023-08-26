@@ -74,7 +74,7 @@ def load_saved_data(path):
     dataset = torch.load(path)
     return dataset
 
-def make_dataset(data_path, save_path, subject, sessions, positions, test_size=0.2):
+def make_dataset(data_path, save_path, subject, sessions, positions, test_size=0.3):
 
     dataset = emgdata(data_path, subjects=subject, sessions=sessions, pos=positions)
     train_data, test_data = random_split(dataset, [int(len(dataset)*(1-test_size)), len(dataset)-int(len(dataset)*(1-test_size))])

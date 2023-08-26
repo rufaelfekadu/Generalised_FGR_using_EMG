@@ -106,7 +106,7 @@ def main(args):
                     lr=args.lr, betas=args.betas, weight_decay=args.weight_decay)
     
 
-    logger.info(f"{'Epoch' : <20}{'Train Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}")
+    logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}")
 
     for epoch in range(1,args.epochs+1):
 

@@ -77,10 +77,10 @@ def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
 
     
     output = {
-        "classifier_loss": class_loss.avg,
-        "total_loss": total_loss.avg,
-        "discriminator_loss": discriminator_loss.avg,
-        "train_acc": accuracy.avg,
+        "classifier_loss": class_loss,
+        "total_loss": total_loss,
+        "discriminator_loss": discriminator_loss,
+        "train_acc": accuracy,
     }
     
     return output
@@ -153,9 +153,10 @@ def main(args):
             classifier.parameters(), 
             lr=args.lr, betas=args.betas, 
             weight_decay=args.weight_decay)
+    
     discriminator_optimizer = torch.optim.Adam(
             discriminator.parameters(), 
-            lr=args.lr, betas=args.betas, 
+            lr=args.d_lr, betas=args.betas, 
             weight_decay=args.weight_decay)
     
     # define loss functions
@@ -166,19 +167,19 @@ def main(args):
     model = (classifier.to(device), discriminator.to(device))
     optimizer = (classifier_optimizer, discriminator_optimizer)
     criterion = (classifier_loss, adverserial_loss)
-
+    logger.info(f"{'Epoch' : <5}{'Train Loss' : ^10}{'Train disc_Loss' : ^10}{'Train Accuracy' : ^10}{'Test Loss' : ^10}{'Test Accuracy' : >5}{'Test disc_Accuracy' : >5}")
     #train
     for epoch in range(1, args.epochs + 1):
 
         train_output = train_epoch(args, model, device, train_loader, optimizer, criterion, epoch)
-
+        log_string = ""
         if epoch % args.test_freq == 0:
-            logger.info('Train Epoch: {} \tTotal Loss: {:.4f}\tDiscriminator Loss: {:.4f}\tAccuracy: {:.2f}%'.format(
-                epoch, train_output["total_loss"], train_output["discriminator_loss"], train_output["train_acc"]*100))
-                    
+
+            log_string = '{:<5}{:^10.4f}{:^10.4f}{:^10.2f}'.format(epoch, train_output["total_loss"].avg, train_output["discriminator_loss"].avg, train_output["train_acc"].avg*100)
             test_output = test(model, test_loader, device=device, criterion=criterion[0])
-            logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%) Dicriminator Accuracy: {:.2f}%'.format(
-                test_output["test_class_loss"].avg, test_output["test_acc"].sum, len(test_loader.dataset), (test_output["test_acc"].avg)*100, test_output["test_disc_acc"].avg*100))
+            
+            log_string += '{:^10.4f}{:^10.2f}{:^10.2f}'.format(test_output["test_class_loss"].avg, test_output["test_acc"].avg*100, test_output["test_disc_acc"].avg*100)
+            logger.info(log_string)
         
     #save model
     # torch.save(feature_extractor, os.path.join(args.logdir,'feature_extractor.pt'))
