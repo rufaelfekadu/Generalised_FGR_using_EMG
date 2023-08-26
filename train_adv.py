@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
-from utils import preprocess_data, get_logger, AverageMeter
+from utils import preprocess_data, get_logger, AverageMeter, arg_parse
 import os
 import sys
 sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recognition')
@@ -135,8 +135,8 @@ def main(args):
     logger.info(args)
     
     #load data
-    train_data =  load_saved_data('./outputs/train_data.pt')
-    test_data = load_saved_data('./outputs/test_data.pt')
+    train_data =  load_saved_data(args.data_path+'/train_data.pt')
+    test_data = load_saved_data(args.data_path+'/test_data.pt')
 
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
     test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
@@ -177,7 +177,7 @@ def main(args):
 
             log_string = '{:<5}{:^10.4f}{:^10.4f}{:^10.2f}'.format(epoch, train_output["total_loss"].avg, train_output["discriminator_loss"].avg, train_output["train_acc"].avg*100)
             test_output = test(model, test_loader, device=device, criterion=criterion[0])
-            
+
             log_string += '{:^10.4f}{:^10.2f}{:^10.2f}'.format(test_output["test_class_loss"].avg, test_output["test_acc"].avg*100, test_output["test_disc_acc"].avg*100)
             logger.info(log_string)
         
@@ -190,33 +190,34 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    # NN
-    parser.add_argument('--in_channels', type=int, default=3)
-    parser.add_argument('--n_classes', type=int, default=3)
-    parser.add_argument('--trained', type=str, default='')
-    parser.add_argument('--slope', type=float, default=0.2)
-    # train
-    parser.add_argument('--lr', type=float, default=1e-5)
-    parser.add_argument('--d_lr', type=float, default=1e-3)
-    parser.add_argument('--weight_decay', type=float, default=2.5e-5)
-    parser.add_argument('--epochs', type=int, default=400)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--betas', type=float, nargs='+', default=(.5, .999))
-    parser.add_argument('--lam', type=float, default=0.25)
-    parser.add_argument('--thr', type=float, default=0.79)
-    parser.add_argument('--thr_domain', type=float, default=0.87)
-    parser.add_argument('--num_val', type=int, default=3)  # number of val. within each epoch
-    # misc
-    parser.add_argument('--n_workers', type=int, default=4)
-    parser.add_argument('--logdir', type=str, default='outputs/adv_model')
-    parser.add_argument('--test_freq', type=int, default=10)
-    # discriminator
-    parser.add_argument('--disc_train_freq', type=int, default=4)
-    parser.add_argument('--alpha', type=float, default=0.25)
+    # parser = argparse.ArgumentParser()
+    # # NN
+    # parser.add_argument('--in_channels', type=int, default=3)
+    # parser.add_argument('--n_classes', type=int, default=3)
+    # parser.add_argument('--trained', type=str, default='')
+    # parser.add_argument('--slope', type=float, default=0.2)
+    # # train
+    # parser.add_argument('--lr', type=float, default=1e-5)
+    # parser.add_argument('--d_lr', type=float, default=1e-3)
+    # parser.add_argument('--weight_decay', type=float, default=2.5e-5)
+    # parser.add_argument('--epochs', type=int, default=400)
+    # parser.add_argument('--batch_size', type=int, default=32)
+    # parser.add_argument('--betas', type=float, nargs='+', default=(.5, .999))
+    # parser.add_argument('--lam', type=float, default=0.25)
+    # parser.add_argument('--thr', type=float, default=0.79)
+    # parser.add_argument('--thr_domain', type=float, default=0.87)
+    # parser.add_argument('--num_val', type=int, default=3)  # number of val. within each epoch
+    # # misc
+    # parser.add_argument('--n_workers', type=int, default=4)
+    # parser.add_argument('--logdir', type=str, default='outputs/adv_model')
+    # parser.add_argument('--test_freq', type=int, default=10)
+    # # discriminator
+    # parser.add_argument('--disc_train_freq', type=int, default=4)
+    # parser.add_argument('--alpha', type=float, default=0.25)
 
     
 
-    args, unknown = parser.parse_known_args()
+    # args, unknown = parser.parse_known_args()
+    args = arg_parse()
     Path(args.logdir).mkdir(parents=True, exist_ok=True)
     main(args)
