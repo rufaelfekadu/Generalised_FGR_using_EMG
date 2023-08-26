@@ -107,7 +107,7 @@ def main(args):
     for epoch in range(1,args.epochs+1):
 
         train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
-        logger.log('Epoch \tTrain Loss \tTrain Accuracy \tTest Loss \tTest Accuracy')
+        logger.info('Epoch \tTrain Loss \tTrain Accuracy \tTest Loss \tTest Accuracy')
         log_string = ""
         if epoch % args.test_freq == 0:
             log_string = '{} \t{:.4f} \t{:.4f} \t{:.2f} \t{:.2f} '.format(epoch, train_output["train_loss"], train_output["train_acc"]*100)
