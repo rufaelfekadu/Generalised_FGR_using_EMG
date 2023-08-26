@@ -110,7 +110,7 @@ def main(args):
         
         if epoch % args.test_freq == 0:
             logger.info('Train Epoch: {} \tTotal Loss: {:.4f}\tAccuracy: {:.2f}%'.format(
-                epoch, train_output["total_loss"], train_output["train_acc"]*100))
+                epoch, train_output["train_loss"], train_output["train_acc"]*100))
                     
             test_output = test(model, test_loader, device=device, criterion=criterion)
             logger.info('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
