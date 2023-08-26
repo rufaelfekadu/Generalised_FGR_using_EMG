@@ -113,7 +113,7 @@ def main(args):
         train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
         log_string = ""
         if epoch % args.test_freq == 0:
-            log_string = '{:<20}{:^20.4f}{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
+            log_string = '{:<10}{:^20.4f}{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
             test_output = test(model, test_loader, device=device, criterion=criterion)
             log_string += '{:^20.4f}{:>10.2f}'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
             logger.info(log_string)

@@ -65,8 +65,8 @@ def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
         classification_loss = classifier_loss(class_output, target) # loss: (batch_size)
         class_loss.update(classification_loss.item(), data.size(0))
 
-        # loss = classification_loss - args.alpha*domain_loss
-        loss = classification_loss
+        loss = classification_loss + args.alpha*domain_loss
+        # loss = classification_loss
         total_loss.update(loss.item(), data.size(0))
 
         loss.backward() # back propagation
@@ -190,7 +190,6 @@ def main(args):
             logger.info(log_string)
         
     #save model
-    # torch.save(feature_extractor, os.path.join(args.logdir,'feature_extractor.pt'))
     torch.save(classifier, os.path.join(args.logdir,'classifier.pt'))
     torch.save(discriminator, os.path.join(args.logdir,'discriminator.pt'))
 
@@ -198,34 +197,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser()
-    # # NN
-    # parser.add_argument('--in_channels', type=int, default=3)
-    # parser.add_argument('--n_classes', type=int, default=3)
-    # parser.add_argument('--trained', type=str, default='')
-    # parser.add_argument('--slope', type=float, default=0.2)
-    # # train
-    # parser.add_argument('--lr', type=float, default=1e-5)
-    # parser.add_argument('--d_lr', type=float, default=1e-3)
-    # parser.add_argument('--weight_decay', type=float, default=2.5e-5)
-    # parser.add_argument('--epochs', type=int, default=400)
-    # parser.add_argument('--batch_size', type=int, default=32)
-    # parser.add_argument('--betas', type=float, nargs='+', default=(.5, .999))
-    # parser.add_argument('--lam', type=float, default=0.25)
-    # parser.add_argument('--thr', type=float, default=0.79)
-    # parser.add_argument('--thr_domain', type=float, default=0.87)
-    # parser.add_argument('--num_val', type=int, default=3)  # number of val. within each epoch
-    # # misc
-    # parser.add_argument('--n_workers', type=int, default=4)
-    # parser.add_argument('--logdir', type=str, default='outputs/adv_model')
-    # parser.add_argument('--test_freq', type=int, default=10)
-    # # discriminator
-    # parser.add_argument('--disc_train_freq', type=int, default=4)
-    # parser.add_argument('--alpha', type=float, default=0.25)
-
-    
-
-    # args, unknown = parser.parse_known_args()
     args = arg_parse()
     Path(args.logdir).mkdir(parents=True, exist_ok=True)
     main(args)
