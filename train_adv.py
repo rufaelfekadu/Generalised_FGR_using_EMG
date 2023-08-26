@@ -65,7 +65,8 @@ def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
         classification_loss = classifier_loss(class_output, target) # loss: (batch_size)
         class_loss.update(classification_loss.item(), data.size(0))
 
-        loss = classification_loss - args.alpha*domain_loss
+        # loss = classification_loss - args.alpha*domain_loss
+        loss = classification_loss
         total_loss.update(loss.item(), data.size(0))
 
         loss.backward() # back propagation
