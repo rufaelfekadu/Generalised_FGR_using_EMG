@@ -92,9 +92,10 @@ if __name__ == '__main__':
 
     subject = [1]
     sessions = [1]
-    positions = [1]
+    positions = [1,2,3]
 
     train_data, test_data = make_dataset(data_path, save_path, subject, sessions, positions)
 
     print(train_data.__getitem__(0))
+    print(train_data.__len__(), test_data.__len__())
     print('done')
