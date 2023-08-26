@@ -4,7 +4,7 @@ import torch
 import random
 
 
-class Net(nn.Module):
+class simpleCNN(nn.Module):
     def __init__(self, num_classes: int = 10, dropout_rate: float = 0.3):
         super().__init__()
         self.dropout_rate = dropout_rate

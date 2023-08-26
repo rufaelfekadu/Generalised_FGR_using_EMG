@@ -3,6 +3,45 @@ from torch import  nn
 from torch.nn import functional
 import random
 
+class Net(nn.Module):
+    def __init__(self, num_classes: int = 10):
+        super(Net, self).__init__()
+        self.encoder = nn.Sequential(
+                 nn.Conv2d(1, 2, 2, padding='same'),
+                    nn.BatchNorm2d(2),
+                    nn.ReLU(),
+                    nn.Conv2d(2, 4, 2, padding='same'),
+                    nn.BatchNorm2d(4),
+                    nn.ReLU(),
+                    nn.Flatten(),
+                    nn.Linear(4*4*4, 40),
+                    nn.BatchNorm1d(40),
+                    nn.ReLU(),
+                    nn.Dropout(p=self.dropout_rate))
+        self.classifier = nn.Sequential(
+                nn.Linear(40, 20),
+                nn.BatchNorm1d(20),
+                nn.ReLU(),
+                nn.Dropout(p=self.dropout_rate),
+                nn.Linear(20, num_classes),
+                nn.Softmax(dim=1)
+            )
+    def forward(self, x, feat=False):
+        # add white gaussian noise to the input only during training
+        if self.training and random.random() < 0:  # % chance to add noise to the batch (adjust to your needs)
+            noise = torch.randn(x.shape) * 0.1 * (float(torch.max(x)) - float(torch.min(x)))  # up to 10% noise
+            # move noise to the same device as x - super important!
+            noise = noise.to(x.device)
+            # add the noise to x
+            x = x + noise
+
+        x = self.encoder(x)
+        if feat:
+            return x
+        
+        x = self.classifier(x)
+        return x
+    
 class Classifier(nn.Module):
     def __init__(self, num_classes: int = 10):
         super(Classifier, self).__init__()

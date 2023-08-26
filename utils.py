@@ -101,11 +101,11 @@ def arg_parse():
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--n_workers', type=int, default=4)
     parser.add_argument('--logdir', type=str, default='outputs/')
-    # office dataset categories
-    parser.add_argument('--src_cat', type=str, default='mscoco')
-    parser.add_argument('--tgt_cat', type=str, default='flir')
-    parser.add_argument('--tgt_conf_cat', type=str, default='flir_confident')
-    parser.add_argument('--message', type=str, default='altinel')  # to track parallel device outputs
+    parser.add_argument('--test_freq', type=int, default=10)
+
+    # discriminator
+    parser.add_argument('--disc_train_freq', type=int, default=4)
+    parser.add_argument('--alpha', type=float, default=0.25)
 
     args, unknown = parser.parse_known_args()
 

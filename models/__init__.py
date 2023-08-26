@@ -1,5 +1,5 @@
-from .cnn import Net, simpleMLP
-from .adv_network import get_adv, Classifier, FeatureExtractor
+from .cnn import simpleCNN, simpleMLP
+from .adv_network import get_adv, Classifier, FeatureExtractor, Net
 from .transformer import VisionTransformer as vision
 def make_model(args):
     if args.model == 'transformer':
