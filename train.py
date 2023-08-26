@@ -16,6 +16,8 @@ from dataset import emgdata, load_saved_data
 from trainner import Trainner
 
 from torch.utils.data import DataLoader
+import warnings
+warnings.filterwarnings("ignore")
 
 
 
@@ -111,9 +113,9 @@ def main(args):
         train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
         log_string = ""
         if epoch % args.test_freq == 0:
-            log_string = '{:<20} {:^20} \t{:^20} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
+            log_string = '{:<20} {:^20.4f} \t{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
             test_output = test(model, test_loader, device=device, criterion=criterion)
-            log_string += '\t{:^20} \t{:>10}\n'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
+            log_string += '\t{:^20.4f} \t{:>10.2f}\n'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
             logger.info(log_string)
         
 if __name__ == '__main__':
