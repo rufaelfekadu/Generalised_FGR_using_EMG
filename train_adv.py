@@ -24,6 +24,11 @@ from models import make_model, vision, Net, Classifier, simpleMLP, FeatureExtrac
 import warnings
 warnings.filterwarnings("ignore")
 
+# set random seed
+torch.manual_seed(0)
+np.random.seed(0)
+
+
 #### TODO:
 # 1. train the discriminator every other epoch
 # 2. have a weight for the discriminator loss
@@ -175,7 +180,7 @@ def main(args):
     model = (classifier.to(device), discriminator.to(device))
     optimizer = (classifier_optimizer, discriminator_optimizer)
     criterion = (classifier_loss, adverserial_loss)
-    logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train disc_Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}{'Test disc_Accuracy' : >10}")
+    logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train disc_Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}{'Test disc_Accuracy' : >5}")
     #train
     for epoch in range(1, args.epochs + 1):
 
@@ -186,7 +191,7 @@ def main(args):
             log_string = '{:<10}{:^20.4f}{:^20.4f}{:^20.2f}'.format(epoch, train_output["total_loss"].avg, train_output["discriminator_loss"].avg, train_output["train_acc"].avg*100)
             test_output = test(model, test_loader, device=device, criterion=criterion[0])
 
-            log_string += '{:^20.4f}{:^20.2f}{:>10.2f}'.format(test_output["test_class_loss"].avg, test_output["test_acc"].avg*100, test_output["test_disc_acc"].avg*100)
+            log_string += '{:^20.4f}{:^20.2f}{:>5.2f}'.format(test_output["test_class_loss"].avg, test_output["test_acc"].avg*100, test_output["test_disc_acc"].avg*100)
             logger.info(log_string)
         
     #save model
