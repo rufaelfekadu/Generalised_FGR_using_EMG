@@ -30,9 +30,9 @@ def reset_weights(m):
     Try resetting model weights to avoid
     weight leakage.
     '''
+    print('Resetting parameters of network')
     for layer in m.children():
         if hasattr(layer, 'reset_parameters'):
-            print(f'Reset trainable parameters of layer = {layer}')
             layer.reset_parameters()
 
 
@@ -122,7 +122,7 @@ def main(args):
 
     #setup kfold
     k_fold = KFold(n_splits=5, shuffle=True, random_state=0)
-    dataset = emgdata(args.data_path, subjects=[1], sessions=[1,2], pos=[1,2,3])
+    dataset = emgdata(args.data_path, subjects=[1], sessions=[1], pos=[1,2,3])
 
     results = {}
     for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset)):
