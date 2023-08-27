@@ -99,14 +99,14 @@ def make_dataset(data_path, save_path, subject, sessions, positions, test_size=0
 if __name__ == '__main__':
     from pathlib import Path
     data_path = Path('/home/rufael.marew/Documents/projects/tau/data/doi_10')
-    save_path = '/home/rufael.marew/Documents/projects/tau/data/emgdataset/'
+    # save_path = '/home/rufael.marew/Documents/projects/tau/data/emgdataset/'
 
     subject = [1]
     sessions = [1]
     positions = [1,2,3]
 
-    train_data, test_data = make_dataset(data_path, save_path, subject, sessions, positions)
+    # train_data, test_data = make_dataset(data_path, save_path, subject, sessions, positions)
 
-    print(train_data.__getitem__(0))
-    print(train_data.__len__(), test_data.__len__())
-    print('done')
+    dataset = emgdata(data_path, subjects=subject, sessions=sessions, pos=positions)
+
+    print(dataset.__len__())

@@ -69,7 +69,7 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--model', type=str, default='transformer')
-    parser.add_argument('--data_path', type=str, default='../data/emgdataset')
+    parser.add_argument('--data_path', type=str, default='../data/doi_10')
     # NN
     parser.add_argument('--in_channels', type=int, default=3)
     parser.add_argument('--n_classes', type=int, default=10)
