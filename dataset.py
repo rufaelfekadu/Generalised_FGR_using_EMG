@@ -10,7 +10,7 @@ sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recog
 from Source.fgr.pipelines import Data_Pipeline
 from Source.fgr.data_manager import Data_Manager
 from sklearn.model_selection import train_test_split
-
+import os
 
 #torch dataset classs
 class emgdata(Dataset):
@@ -23,7 +23,7 @@ class emgdata(Dataset):
 
         if checkpoint:
             try:
-                dataset = load_saved_data(data_dir+'/dataset.pt')
+                dataset = load_saved_data(os.path.join(data_dir,'/dataset.pt'))
             except FileNotFoundError:
                 print('dataset not found, creating new dataset')
                 dataset = self.create_dataset()
