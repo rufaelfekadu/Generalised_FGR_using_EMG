@@ -25,6 +25,17 @@ from sklearn.model_selection import KFold
 torch.manual_seed(0)
 np.random.seed(0)
 
+def reset_weights(m):
+    '''
+    Try resetting model weights to avoid
+    weight leakage.
+    '''
+    for layer in m.children():
+        if hasattr(layer, 'reset_parameters'):
+            print(f'Reset trainable parameters of layer = {layer}')
+            layer.reset_parameters()
+
+
 def train(args, model, device, train_loader, test_loader, optimizer, criterion, logger):
 
     logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}")
@@ -106,9 +117,8 @@ def main(args):
         logger.info("%s: %r", arg, value)
 
     #setup device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # set device to mps 
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(args.device)
 
     #setup kfold
     k_fold = KFold(n_splits=5, shuffle=True, random_state=0)
@@ -125,6 +135,7 @@ def main(args):
         test_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=test_subsampler)
 
         model = Net(num_classes=10).to(device)
+        model.apply(reset_weights)
 
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(
@@ -136,10 +147,13 @@ def main(args):
 
         #final test
         test_output = test(model, test_loader, device=device, criterion=criterion)
+        logger.info(f"{'': <10}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
+        logger.info(f"{'': <10}{test_output['test_loss'].avg:^20.4f}{test_output['test_acc'].avg*100:^20.2f}")
+
         results[fold] = test_output
     
     #print final result
-    logger.info(f"\n\n{'Fold' : <10}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
+    logger.info(f"\n\n{'': <10}{'Fold' : <20}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
     sum = 0.0
     for fold, result in results.items():
         logger.info(f"{fold+1:<10}{result['test_loss'].avg:^20.4f}{result['test_acc'].avg*100:^20.2f}")
@@ -156,5 +170,5 @@ if __name__ == '__main__':
     Path(args.logdir).mkdir(parents=True, exist_ok=True)
     data_path = Path(args.data_path)
     args.__setattr__('data_path', data_path)
-    
+
     main(args)
