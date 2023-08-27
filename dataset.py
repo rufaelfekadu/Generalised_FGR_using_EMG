@@ -20,17 +20,21 @@ class emgdata(Dataset):
         self.subjects = subjects
         self.sessions = sessions
         self.pos = pos
+        self.transform = transform
+        self.target_transform = target_transform
 
         if checkpoint:
             try:
-                dataset = load_saved_data(os.path.join(data_dir,'/dataset.pt'))
+                dataset = self.load_saved_data(os.path.join(data_dir,'/dataset.pt'))
+                self.data = dataset.data
+                self.target = dataset.target
+                self.pos = dataset.pos
+                del dataset
             except FileNotFoundError:
                 print('dataset not found, creating new dataset')
-                dataset = self.create_dataset()
-                torch.save(dataset, data_dir+'/dataset.pt')
-            self.data = dataset.data
-            self.target = dataset.target
-            self.pos = dataset.pos
+                self.create_dataset()
+                torch.save(self, os.path.join(data_dir,'/dataset.pt'))
+            
         else:
             self.create_dataset()
 
@@ -71,13 +75,14 @@ class emgdata(Dataset):
         else:
             self.target = torch.from_numpy(self.target).long()
     
+    
     def load_saved_data(self, path):
         dataset = torch.load(path)
         return dataset
 
-def load_saved_data(path):
-    dataset = torch.load(path)
-    return dataset
+# def load_saved_data(path):
+#     dataset = torch.load(path)
+#     return dataset
 
 def make_dataset(data_path, save_path, subject, sessions, positions, test_size=0.3):
 
