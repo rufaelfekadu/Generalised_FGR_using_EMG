@@ -14,17 +14,29 @@ from Source.fgr.data_manager import Data_Manager
 
 from utils import preprocess_data, get_logger, arg_parse, AverageMeter
 from dataset import emgdata, load_saved_data
-from trainner import Trainner
 
 from torch.utils.data import DataLoader
 import warnings
 warnings.filterwarnings("ignore")
 
+from sklearn.model_selection import KFold
+
 # set random seed
 torch.manual_seed(0)
 np.random.seed(0)
 
+def train(args, model, device, train_loader, test_loader, optimizer, criterion, logger):
 
+    logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}")
+    for epoch in range(1,args.epochs+1):
+
+        train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
+        log_string = ""
+        if epoch % args.test_freq == 0:
+            log_string = '{:<10}{:^20.4f}{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
+            test_output = test(model, test_loader, device=device, criterion=criterion)
+            log_string += '{:^20.4f}{:>10.2f}'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
+            logger.info(log_string)
 
 # train_epoch function
 def train_epoch(model, device, train_loader, optimizer, criterion, epoch):
@@ -95,33 +107,52 @@ def main(args):
     #setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    #setup kfold
+    k_fold = KFold(n_splits=5, shuffle=True, random_state=0)
+    dataset = emgdata(args.data_path, subjects=[1], sessions=[1,2], pos=[1,2,3])
+
     #load data
-    train_data =  load_saved_data(args.data_path+'/train_data.pt')
-    test_data = load_saved_data(args.data_path+'/test_data.pt')
+    # train_data =  load_saved_data(args.data_path+'/train_data.pt')
+    # test_data = load_saved_data(args.data_path+'/test_data.pt')
 
-    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
-    test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
+    # train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
+    # test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
 
+    results = {}
 
-    model = Net(num_classes=10).to(device)
+    for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset)):
 
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(
-                    model.parameters(),
-                    lr=args.lr, betas=args.betas, weight_decay=args.weight_decay)
+        logger.info(f"{'Fold' : <10}{fold+1}")
+        train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
+        test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
+
+        train_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=train_subsampler)
+        test_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=test_subsampler)
+
+        model = Net(num_classes=10).to(device)
+
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(
+                        model.parameters(),
+                        lr=args.lr, betas=args.betas, weight_decay=args.weight_decay)
     
 
-    logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}")
+        train(args, model, device, train_loader, test_loader, optimizer, criterion, logger)
 
-    for epoch in range(1,args.epochs+1):
+        #final test
+        test_output = test(model, test_loader, device=device, criterion=criterion)
+        results[fold] = test_output
+    
+    #print final result
+    logger.info(f"\n\n{'Fold' : <10}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
+    sum = 0.0
+    for fold, result in results.items():
+        logger.info(f"{fold+1:<10}{result['test_loss'].avg:^20.4f}{result['test_acc'].avg*100:^20.2f}")
+        sum += result['test_acc'].avg*100
+    logger.info(f"\n{'Average' : <10}{sum/len(results.items()):^20.4f}")
 
-        train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
-        log_string = ""
-        if epoch % args.test_freq == 0:
-            log_string = '{:<10}{:^20.4f}{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
-            test_output = test(model, test_loader, device=device, criterion=criterion)
-            log_string += '{:^20.4f}{:>10.2f}'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
-            logger.info(log_string)
+
+    
         
 if __name__ == '__main__':
 

@@ -9,25 +9,44 @@ import sys
 sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recognition')
 from Source.fgr.pipelines import Data_Pipeline
 from Source.fgr.data_manager import Data_Manager
+from sklearn.model_selection import train_test_split
 
 
 #torch dataset classs
 class emgdata(Dataset):
-    def __init__(self, data_dir, subjects=[1], pos=[1,2,3], sessions=[1,2], transform=None, target_transform=None, train=True):
+    def __init__(self, data_dir, subjects=[1], pos=[1,2,3], sessions=[1,2], transform=None, target_transform=None, train=True, checkpoint=True):
 
         self.pipeline = Data_Pipeline(base_data_files_path=data_dir)  # configure the data pipeline you would like to use (check pipelines module for more info)
         self.subjects = subjects
         self.sessions = sessions
         self.pos = pos
 
-        
+        if checkpoint:
+            try:
+                dataset = load_saved_data(data_dir+'/dataset.pt')
+            except FileNotFoundError:
+                print('dataset not found, creating new dataset')
+                dataset = self.create_dataset()
+                torch.save(dataset, data_dir+'/dataset.pt')
+            self.data = dataset.data
+            self.target = dataset.target
+            self.pos = dataset.pos
+        else:
+            self.create_dataset()
+
+    def __len__(self):
+        return len(self.data)
+    def __getitem__(self, idx):
+        return self.data[idx], (self.target[idx], self.pos[idx])
+    
+    def create_dataset(self):
         dm = Data_Manager(self.subjects, self.pipeline)
         print(dm.data_info())
 
         experiments = []
-        for subject in subjects:
-            for session in sessions:
-                for p in pos:
+        for subject in self.subjects:
+            for session in self.sessions:
+                for p in self.pos:
                     experiments.append(f'{subject:03d}_{session}_{p}')
         
         dataset = dm.get_dataset(experiments=experiments)
@@ -42,33 +61,19 @@ class emgdata(Dataset):
         data = data.reshape(data.shape[0],1,4,4)
         self.data = data
 
-        if transform is not None:
-            self.data = transform(self.data) #t
+        if self.transform is not None:
+            self.data = self.transform(self.data) #t
         else:
             self.data = torch.from_numpy(self.data).float()
         
-        if target_transform is not None:
-            self.target = target_transform(self.target)
+        if self.target_transform is not None:
+            self.target = self.target_transform(self.target)
         else:
             self.target = torch.from_numpy(self.target).long()
-        
-    def __len__(self):
-        return len(self.data)
-    def __getitem__(self, idx):
-        return self.data[idx], (self.target[idx], self.pos[idx])
     
-    def visualize(self, idxs):
-        import matplotlib.pyplot as plt
-        
-        fig, ax = plt.subplots(1, len(idxs), figsize=(20, 4))
-        for i, idx in enumerate(idxs):
-            #append 0 to the start of each image
-            toplot = torch.cat((torch.zeros(16,1), self.data[idx]), dim=1)
-            toplot = toplot[:3,:].T
-            ax[i].imshow(toplot.reshape(49,49,3))
-            ax[i].set_title(self.target[idx])
-        plt.savefig('test.png')
-        plt.show()
+    def load_saved_data(self, path):
+        dataset = torch.load(path)
+        return dataset
 
 def load_saved_data(path):
     dataset = torch.load(path)
@@ -77,12 +82,18 @@ def load_saved_data(path):
 def make_dataset(data_path, save_path, subject, sessions, positions, test_size=0.3):
 
     dataset = emgdata(data_path, subjects=subject, sessions=sessions, pos=positions)
-    train_data, test_data = random_split(dataset, [int(len(dataset)*(1-test_size)), len(dataset)-int(len(dataset)*(1-test_size))])
+    # train_idx, test_idx = train_test_split(np.arange(len(dataset)), test_size=test_size, shuffle=True, stratify=dataset.target)
+    # # train_data, test_data = random_split(dataset, [int(len(dataset)*(1-test_size)), len(dataset)-int(len(dataset)*(1-test_size))])
 
-    torch.save(train_data, save_path+'/train_data.pt')
-    torch.save(test_data, save_path+'/test_data.pt')
+    # train_data = torch.utils.data.Subset(dataset, train_idx)
+    # test_data = torch.utils.data.Subset(dataset, test_idx)
 
+    # torch.save(train_data, save_path+'/train_data.pt')
+    # torch.save(test_data, save_path+'/test_data.pt')
+
+    torch.save(dataset, save_path+'/dataset.pt')
     del dataset
+
     return train_data, test_data
 
 if __name__ == '__main__':
