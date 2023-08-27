@@ -102,27 +102,22 @@ def main(args):
             
     #setup logger
     logger = get_logger(os.path.join(args.logdir, 'cnn.log'))
-    logger.info(args)
+    for arg, value in sorted(vars(args).items()):
+        logger.info("%s: %r", arg, value)
 
     #setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # set device to mps 
 
     #setup kfold
     k_fold = KFold(n_splits=5, shuffle=True, random_state=0)
     dataset = emgdata(args.data_path, subjects=[1], sessions=[1,2], pos=[1,2,3])
 
-    #load data
-    # train_data =  load_saved_data(args.data_path+'/train_data.pt')
-    # test_data = load_saved_data(args.data_path+'/test_data.pt')
-
-    # train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
-    # test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
-
     results = {}
-
     for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset)):
 
-        logger.info(f"{'Fold' : <10}{fold+1}")
+        logger.info(f"\n{'Fold' : <10}{fold+1}")
         train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
         test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
 
@@ -157,6 +152,9 @@ def main(args):
 if __name__ == '__main__':
 
     args = arg_parse()
-    Path(args.logdir).mkdir(parents=True, exist_ok=True)
 
+    Path(args.logdir).mkdir(parents=True, exist_ok=True)
+    data_path = Path(args.data_path)
+    args.__setattr__('data_path', data_path)
+    
     main(args)

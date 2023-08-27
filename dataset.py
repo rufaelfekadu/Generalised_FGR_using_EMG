@@ -80,38 +80,24 @@ class emgdata(Dataset):
         dataset = torch.load(path)
         return dataset
 
-# def load_saved_data(path):
-#     dataset = torch.load(path)
-#     return dataset
+def load_saved_data(path):
+    dataset = torch.load(path)
+    return dataset
 
-def make_dataset(data_path, save_path, subject, sessions, positions, test_size=0.3):
-
-    dataset = emgdata(data_path, subjects=subject, sessions=sessions, pos=positions)
-    # train_idx, test_idx = train_test_split(np.arange(len(dataset)), test_size=test_size, shuffle=True, stratify=dataset.target)
-    # # train_data, test_data = random_split(dataset, [int(len(dataset)*(1-test_size)), len(dataset)-int(len(dataset)*(1-test_size))])
-
-    # train_data = torch.utils.data.Subset(dataset, train_idx)
-    # test_data = torch.utils.data.Subset(dataset, test_idx)
-
-    # torch.save(train_data, save_path+'/train_data.pt')
-    # torch.save(test_data, save_path+'/test_data.pt')
-
-    torch.save(dataset, save_path+'/dataset.pt')
-    del dataset
-
-    return train_data, test_data
 
 if __name__ == '__main__':
     from pathlib import Path
-    data_path = Path('/home/rufael.marew/Documents/projects/tau/data/doi_10')
-    # save_path = '/home/rufael.marew/Documents/projects/tau/data/emgdataset/'
+    import argparse
 
-    subject = [1]
-    sessions = [1]
-    positions = [1,2,3]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_path', type=str, default='/home/rufael.marew/Documents/projects/tau/data/doi_10')
+    parser.add_argument('--subject', type=int, default=[1])
+    parser.add_argument('--sessions', type=int, default=[1,2])
+    parser.add_argument('--positions', type=int, default=[1,2,3])
+    parser.add_argument('checkpoint', type=bool, default=True)
+    args = parser.parse_args()
 
-    # train_data, test_data = make_dataset(data_path, save_path, subject, sessions, positions)
-
-    dataset = emgdata(data_path, subjects=subject, sessions=sessions, pos=positions)
+    data_path = Path(args.data_path)
+    dataset = emgdata(args.data_path, subjects=args.subject, sessions=args.sessions, pos=args.positions)
 
     print(dataset.__len__())
