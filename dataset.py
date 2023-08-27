@@ -25,7 +25,7 @@ class emgdata(Dataset):
 
         if checkpoint:
             try:
-                dataset = self.load_saved_data(os.path.join(data_dir,'/dataset.pt'))
+                dataset = self.load_saved_data(os.path.join(data_dir,'dataset.pt'))
                 self.data = dataset.data
                 self.target = dataset.target
                 self.pos = dataset.pos
@@ -33,7 +33,7 @@ class emgdata(Dataset):
             except FileNotFoundError:
                 print('dataset not found, creating new dataset')
                 self.create_dataset()
-                torch.save(self, os.path.join(data_dir,'/dataset.pt'))
+                torch.save(self, os.path.join(data_dir,'dataset.pt'))
             
         else:
             self.create_dataset()
