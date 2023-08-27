@@ -91,7 +91,7 @@ def arg_parse():
     parser.add_argument('--d_lr', type=float, default=1e-3)
     parser.add_argument('--weight_decay', type=float, default=2.5e-5)
     parser.add_argument('--epochs', type=int, default=15)
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=48)
     parser.add_argument('--betas', type=float, nargs='+', default=(.5, .999))
     parser.add_argument('--lam', type=float, default=0.25)
     parser.add_argument('--thr', type=float, default=0.79)
