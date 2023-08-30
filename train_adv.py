@@ -20,6 +20,7 @@ from Source.fgr.data_manager import Data_Manager
 
 from models import make_model, vision, Net, Classifier, simpleMLP, FeatureExtractor
 
+from sklearn.model_selection import KFold
 #ignore warnings
 import warnings
 warnings.filterwarnings("ignore")
@@ -33,6 +34,22 @@ np.random.seed(0)
 # 1. train the discriminator every other epoch
 # 2. have a weight for the discriminator loss
 
+def train(args, model, device, train_loader, test_loader, optimizer, criterion, logger):
+    logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train disc_Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}{'Test disc_Accuracy' : >5}")
+    #train
+    for epoch in range(1, args.epochs + 1):
+
+        train_output = train_epoch(args, model, device, train_loader, optimizer, criterion, epoch)
+        log_string = ""
+        if epoch % args.test_freq == 0:
+
+            log_string = '{:<10}{:^20.4f}{:^20.4f}{:^20.2f}'.format(epoch, train_output["total_loss"].avg, train_output["discriminator_loss"].avg, train_output["train_acc"].avg*100)
+            test_output = test(model, test_loader, device=device, criterion=criterion[0])
+
+            log_string += '{:^20.4f}{:^20.2f}{:>5.2f}'.format(test_output["test_class_loss"].avg, test_output["test_acc"].avg*100, test_output["test_disc_acc"].avg*100)
+            logger.info(log_string)
+    
+    return model
 
 # train_epoch function
 def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
@@ -146,62 +163,95 @@ def main(args):
     #setup logger
     logger = get_logger(os.path.join(args.logdir, 'adv_train.log'))
     logger.info(args)
-    
-    #load data
-    train_data =  load_saved_data(args.data_path+'/train_data.pt')
-    test_data = load_saved_data(args.data_path+'/test_data.pt')
-
-    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
-    test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers)
 
     # specify device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # define models
-    discriminator = Classifier(num_classes=3)
-    classifier = Net(num_classes=10)
-
-    # define optimizers
-    classifier_optimizer = torch.optim.Adam(
-            classifier.parameters(), 
-            lr=args.lr, betas=args.betas, 
-            weight_decay=args.weight_decay)
+    #setup kfold
+    kfold = KFold(n_splits=args.n_splits, shuffle=True, random_state=args.seed)
+    dataset = emgdata(args.data_path, 
+                      subjects=[1],
+                      pos=[1,2,3],
+                      sessions=[1],
+                      transform=None,
+                      target_transform=None,
+                      train=True,
+                      checkpoint=True)
     
-    discriminator_optimizer = torch.optim.Adam(
-            discriminator.parameters(), 
-            lr=args.d_lr, betas=args.betas, 
-            weight_decay=args.weight_decay)
-    
-    # define loss functions
-    adverserial_loss = nn.CrossEntropyLoss()
-    classifier_loss = nn.CrossEntropyLoss()
+    results = {}
+    for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
 
-    # define model
-    model = (classifier.to(device), discriminator.to(device))
-    optimizer = (classifier_optimizer, discriminator_optimizer)
-    criterion = (classifier_loss, adverserial_loss)
-    logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train disc_Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}{'Test disc_Accuracy' : >5}")
-    #train
-    for epoch in range(1, args.epochs + 1):
+        logger.info(f"\n{'Fold' : <10}{fold+1}")
+        train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
+        test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
 
-        train_output = train_epoch(args, model, device, train_loader, optimizer, criterion, epoch)
-        log_string = ""
-        if epoch % args.test_freq == 0:
+        # define data loaders
+        train_loader = DataLoader(dataset,
+                                    batch_size=args.batch_size,
+                                    sampler=train_subsampler,
+                                    num_workers=args.num_workers,
+                                    pin_memory=True)
 
-            log_string = '{:<10}{:^20.4f}{:^20.4f}{:^20.2f}'.format(epoch, train_output["total_loss"].avg, train_output["discriminator_loss"].avg, train_output["train_acc"].avg*100)
-            test_output = test(model, test_loader, device=device, criterion=criterion[0])
-
-            log_string += '{:^20.4f}{:^20.2f}{:>5.2f}'.format(test_output["test_class_loss"].avg, test_output["test_acc"].avg*100, test_output["test_disc_acc"].avg*100)
-            logger.info(log_string)
+        test_loader = DataLoader(dataset,
+                                    batch_size=args.batch_size,
+                                    sampler=test_subsampler,
+                                    num_workers=args.num_workers,
+                                    pin_memory=True)
         
-    #save model
-    torch.save(classifier, os.path.join(args.logdir,'classifier.pt'))
-    torch.save(discriminator, os.path.join(args.logdir,'discriminator.pt'))
+        # define models
+        discriminator = Classifier(num_classes=3)
+        classifier = Net(num_classes=10)
+
+        # define optimizers
+        classifier_optimizer = torch.optim.Adam(
+                classifier.parameters(), 
+                lr=args.lr, betas=args.betas, 
+                weight_decay=args.weight_decay)
+    
+        discriminator_optimizer = torch.optim.Adam(
+                discriminator.parameters(), 
+                lr=args.d_lr, betas=args.betas, 
+                weight_decay=args.weight_decay)
+    
+        # define loss functions
+        adverserial_loss = nn.CrossEntropyLoss()
+        classifier_loss = nn.CrossEntropyLoss()
+
+        # define model
+        model = (classifier.to(device), discriminator.to(device))
+        optimizer = (classifier_optimizer, discriminator_optimizer)
+        criterion = (classifier_loss, adverserial_loss)
+    
+        train(args, model, device, train_loader, test_loader, optimizer, criterion, logger)
+
+        #final test
+        test_output = test(model, test_loader, device=device, criterion=criterion[0])
+        logger.info(f"{'': <10}{'Test Loss' : ^20}{'Test Accuracy' : ^20}{'Test disc_Accuracy' : >5}")
+        logger.info(f"{'': <10}{test_output['test_class_loss'].avg:^20.4f}{test_output['test_acc'].avg*100:^20.2f}{test_output['test_disc_acc'].avg*100:^5.2f}")
+
+        results[fold] = test_output
+
+    #print final result
+    logger.info(f"\n\n{'': <10}{'Fold' : <20}{'Test Loss' : ^20}{'Test Accuracy' : ^20}{'Test disc_Accuracy' : >5}")
+    sum = 0.0
+    for fold, result in results.items():
+        logger.info(f"{fold+1:<10}{result['test_class_loss'].avg:^20.4f}{result['test_acc'].avg*100:^20.2f}{result['test_disc_acc'].avg*100:^5.2f}")
+        sum += result['test_acc'].avg*100
+    logger.info(f"\n{'Average' : <10}{sum/len(results.items()):^20.4f}")
+    
+    # #save model
+    # torch.save(classifier, os.path.join(args.logdir,'classifier.pt'))
+    # torch.save(discriminator, os.path.join(args.logdir,'discriminator.pt'))
 
 
 
 
 if __name__ == '__main__':
+
     args = arg_parse()
+
     Path(args.logdir).mkdir(parents=True, exist_ok=True)
+    data_path = Path(args.data_path)
+    args.__setattr__('data_path', data_path)
+    
     main(args)

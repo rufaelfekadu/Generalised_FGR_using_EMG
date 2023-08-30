@@ -30,7 +30,6 @@ def reset_weights(m):
     Try resetting model weights to avoid
     weight leakage.
     '''
-    print('Resetting parameters of network')
     for layer in m.children():
         if hasattr(layer, 'reset_parameters'):
             layer.reset_parameters()
