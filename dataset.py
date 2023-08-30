@@ -23,9 +23,10 @@ class emgdata(Dataset):
         self.transform = transform
         self.target_transform = target_transform
 
+        name = f"subject_{subjects[0]}-{subjects[-1]}_sessions_{sessions[0]}-{sessions[-1]}_positions_{pos[0]}-{pos[-1]}.pt"
         if checkpoint:
             try:
-                dataset = self.load_saved_data(os.path.join(data_dir,'dataset.pt'))
+                dataset = self.load_saved_data(os.path.join(data_dir,name))
                 self.data = dataset.data
                 self.target = dataset.target
                 self.pos = dataset.pos
@@ -33,7 +34,7 @@ class emgdata(Dataset):
             except FileNotFoundError:
                 print('dataset not found, creating new dataset')
                 self.create_dataset()
-                torch.save(self, os.path.join(data_dir,'dataset.pt'))
+                torch.save(self, os.path.join(data_dir,name))
             
         else:
             self.create_dataset()
