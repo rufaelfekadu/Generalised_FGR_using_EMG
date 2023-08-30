@@ -34,6 +34,17 @@ np.random.seed(0)
 # 1. train the discriminator every other epoch
 # 2. have a weight for the discriminator loss
 
+
+def reset_weights(m):
+    '''
+    Try resetting model weights to avoid
+    weight leakage.
+    '''
+    for layer in m.children():
+        if hasattr(layer, 'reset_parameters'):
+            layer.reset_parameters()
+
+
 def train(args, model, device, train_loader, test_loader, optimizer, criterion, logger):
     logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train disc_Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}{'Test disc_Accuracy' : >5}")
     #train
@@ -79,15 +90,13 @@ def train_epoch(args, model, device, train_loader, optimizer, criterion, epoch):
         domain_loss = adverserial_loss(domain_output, pos)
         discriminator_loss.update(domain_loss.item(), data.size(0))
 
-        
-
         # train classifier
         classifier_optimizer.zero_grad() # set gradient to zero
         class_output = classifier.classifier(feature)
         classification_loss = classifier_loss(class_output, target) # loss: (batch_size)
         class_loss.update(classification_loss.item(), data.size(0))
 
-        loss = classification_loss + args.alpha*domain_loss
+        loss = classification_loss - args.alpha*domain_loss
         # loss = classification_loss
         total_loss.update(loss.item(), data.size(0))
 
@@ -189,19 +198,20 @@ def main(args):
         train_loader = DataLoader(dataset,
                                     batch_size=args.batch_size,
                                     sampler=train_subsampler,
-                                    num_workers=args.num_workers,
+                                    num_workers=args.n_workers,
                                     pin_memory=True)
 
         test_loader = DataLoader(dataset,
                                     batch_size=args.batch_size,
                                     sampler=test_subsampler,
-                                    num_workers=args.num_workers,
+                                    num_workers=args.n_workers,
                                     pin_memory=True)
         
         # define models
         discriminator = Classifier(num_classes=3)
+        discriminator.apply(reset_weights)
         classifier = Net(num_classes=10)
-
+        classifier.apply(reset_weights)
         # define optimizers
         classifier_optimizer = torch.optim.Adam(
                 classifier.parameters(), 
