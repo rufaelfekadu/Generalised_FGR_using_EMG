@@ -3,20 +3,15 @@ from pathlib import Path
 import argparse
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch.utils.data import DataLoader
 
 from utils import preprocess_data, get_logger, AverageMeter, arg_parse
 import os
-import sys
-sys.path.append('/home/rufael.marew/Documents/projects/tau/Fingers-Gesture-Recognition')
 
 # import data stuff
 import numpy as np
 from dataset import emgdata, load_saved_data
 # import Source.fgr.models as models
-
-from Source.fgr.pipelines import Data_Pipeline
-from Source.fgr.data_manager import Data_Manager
 
 from models import make_model, vision, Net, Classifier, simpleMLP, FeatureExtractor
 
@@ -171,7 +166,9 @@ def main(args):
 
     #setup logger
     logger = get_logger(os.path.join(args.logdir, 'adv_train.log'))
-    logger.info(args)
+
+    for arg, value in sorted(vars(args).items()):
+        logger.info("%s: %r", arg, value)
 
     # specify device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -181,7 +178,7 @@ def main(args):
     dataset = emgdata(args.data_path, 
                       subjects=[1],
                       pos=[1,2,3],
-                      sessions=[1],
+                      sessions=[1,2],
                       transform=None,
                       target_transform=None,
                       train=True,

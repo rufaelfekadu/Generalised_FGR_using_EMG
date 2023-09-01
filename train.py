@@ -121,7 +121,7 @@ def main(args):
 
     #setup kfold
     k_fold = KFold(n_splits=5, shuffle=True, random_state=0)
-    dataset = emgdata(args.data_path, subjects=[1], sessions=[1], pos=[1,2,3])
+    dataset = emgdata(args.data_path, subjects=[1], sessions=[1,2], pos=[1,2,3])
 
     results = {}
     for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset)):

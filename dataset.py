@@ -76,6 +76,11 @@ class emgdata(Dataset):
         else:
             self.target = torch.from_numpy(self.target).long()
     
+    def senario_1(self):
+        pass
+    def senario_2(self):
+        pass
+
     
     def load_saved_data(self, path):
         dataset = torch.load(path)
