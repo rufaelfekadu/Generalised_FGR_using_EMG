@@ -12,9 +12,15 @@ from Source.fgr.data_manager import Data_Manager
 from sklearn.model_selection import train_test_split
 import os
 
+
+scenario = {
+    0:{'subject':[1,2,3,4,5,6,7,8,9,10], 'sessions':[1,2], 'pos':[1,2,3]},
+    1:{'subject':[1,2,3,4,5,6,7,8,9,10], 'sessions':[1,2], 'pos':[1,2,3]},
+    2:{'subject':[1,2,3,4,5,6,7,8,9,10], 'sessions':[1,2], 'pos':[1,2,3]},
+}
 #torch dataset classs
 class emgdata(Dataset):
-    def __init__(self, data_dir, subjects=[1], pos=[1,2,3], sessions=[1,2], transform=None, target_transform=None, train=True, checkpoint=True):
+    def __init__(self, data_dir, subjects=[1], pos=[1,2,3], sessions=[1,2], transform=None, target_transform=None, train=True, checkpoint=True, scenario=0):
 
         self.pipeline = Data_Pipeline(base_data_files_path=data_dir)  # configure the data pipeline you would like to use (check pipelines module for more info)
         self.subjects = subjects
@@ -30,6 +36,7 @@ class emgdata(Dataset):
                 self.data = dataset.data
                 self.target = dataset.target
                 self.pos = dataset.pos
+                self.label = dataset.label
                 del dataset
             except FileNotFoundError:
                 print('dataset not found, creating new dataset')
@@ -59,7 +66,7 @@ class emgdata(Dataset):
         data = dataset[0]
         labels = dataset[1]
         labelencoder = LabelEncoder()
-
+        self.label = dataset[1]
         self.target = labelencoder.fit_transform(np.char.strip(labels, '_0123456789'))
         self.pos = torch.from_numpy(labelencoder.fit_transform(np.array([i.split('_')[2] for i in labels]))).long()
 

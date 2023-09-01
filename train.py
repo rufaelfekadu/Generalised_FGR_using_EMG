@@ -19,11 +19,12 @@ from torch.utils.data import DataLoader
 import warnings
 warnings.filterwarnings("ignore")
 
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 # set random seed
 torch.manual_seed(0)
 np.random.seed(0)
+
 
 def reset_weights(m):
     '''
@@ -120,11 +121,11 @@ def main(args):
     device = torch.device(args.device)
 
     #setup kfold
-    k_fold = KFold(n_splits=5, shuffle=True, random_state=0)
+    k_fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
     dataset = emgdata(args.data_path, subjects=[1], sessions=[1,2], pos=[1,2,3])
 
     results = {}
-    for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset)):
+    for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset, dataset.label.numpy())):
 
         logger.info(f"\n{'Fold' : <10}{fold+1}")
         train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
