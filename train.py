@@ -7,7 +7,7 @@ import numpy as np
 
 #import data stuff
 import sys
-sys.path.append('../Fingers-Gesture-Recognition')
+sys.path.append('/Users/rufaelmarew/Documents/tau/project/Fingers-Gesture-Recognition')
 import Source.fgr.models as models
 from Source.fgr.pipelines import Data_Pipeline
 from Source.fgr.data_manager import Data_Manager
@@ -72,7 +72,8 @@ def train_epoch(model, device, train_loader, optimizer, criterion, epoch):
         loss.backward() # back propagation
         optimizer.step() # update parameters
 
-        pred = output.argmax(dim=1, keepdim=True)
+        # pred = output.argmax(dim=1, keepdim=True)
+        pred = output.max(dim=1, keepdim=True)[1]  
         correct = pred.eq(target.view_as(pred)).sum().item()
 
         accuracy.update(correct, data.size(0))
@@ -96,8 +97,8 @@ def test(model, test_loader, device, criterion):
             data, target = data.to(device), target.to(device)
 
             output = model(data)
-            pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
-
+            # pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
+            pred = output.max(dim=1, keepdim=True)[1]
             test_accuracy.update(pred.eq(target.view_as(pred)).sum().item(), data.size(0))
             test_loss.update(criterion(output, target).item(), data.size(0))
 

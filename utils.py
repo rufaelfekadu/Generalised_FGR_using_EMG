@@ -69,7 +69,7 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--model', type=str, default='transformer')
-    parser.add_argument('--data_path', type=str, default='../data/doi_10')
+    parser.add_argument('--data_path', type=str, default='/Users/rufaelmarew/Documents/tau/project/data/doi_10')
     # NN
     parser.add_argument('--in_channels', type=int, default=3)
     parser.add_argument('--n_classes', type=int, default=10)
@@ -101,7 +101,7 @@ def arg_parse():
     parser.add_argument('--n_splits', type=int, default=5)
     parser.add_argument('--seed', type=int, default=0)
     # misc
-    parser.add_argument('--device', type=str, default='cuda')
+    parser.add_argument('--device', type=str, default='mps')
     parser.add_argument('--n_workers', type=int, default=4)
     parser.add_argument('--logdir', type=str, default='outputs/')
     parser.add_argument('--test_freq', type=int, default=10)
