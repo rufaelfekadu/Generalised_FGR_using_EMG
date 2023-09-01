@@ -15,7 +15,7 @@ from dataset import emgdata, load_saved_data
 
 from models import make_model, vision, Net, Classifier, simpleMLP, FeatureExtractor
 
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 #ignore warnings
 import warnings
 warnings.filterwarnings("ignore")
@@ -174,7 +174,7 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     #setup kfold
-    kfold = KFold(n_splits=args.n_splits, shuffle=True, random_state=args.seed)
+    kfold = StratifiedKFold(n_splits=args.n_splits, shuffle=True, random_state=args.seed)
     dataset = emgdata(args.data_path, 
                       subjects=[1],
                       pos=[1,2,3],
@@ -185,7 +185,7 @@ def main(args):
                       checkpoint=True)
     
     results = {}
-    for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
+    for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset, dataset.label)):
 
         logger.info(f"\n{'Fold' : <10}{fold+1}")
         train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
