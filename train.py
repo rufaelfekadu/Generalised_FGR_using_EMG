@@ -125,7 +125,7 @@ def main(args):
     dataset = emgdata(args.data_path, subjects=[1], sessions=[1,2], pos=[1,2,3])
 
     results = {}
-    for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset, dataset.label.numpy())):
+    for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset, dataset.label)):
 
         logger.info(f"\n{'Fold' : <10}{fold+1}")
         train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
