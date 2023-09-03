@@ -1,5 +1,5 @@
-DATA_DIR = "../../data/doi_10"
-OUTPUT_DIR = "../output/scenario_1"
+DATA_DIR="../../data/doi_10"
+OUTPUT_DIR="../output/scenario_1"
 
 #run the training script
 for subject in 1 4 5 7 11 12 15 16
