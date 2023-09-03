@@ -34,9 +34,9 @@ _C.MODEL.TRANSFORMER.DROPOUT = 0.2
 
 _C.DATA = CN()
 _C.DATA.PATH = "../data/doi_10"
-_C.DATA.SUBJECT = [1]
-_C.DATA.POSITION = [1]
-_C.DATA.SESSION = [1]
+_C.DATA.SUBJECT = 1
+_C.DATA.POSITION = 1
+_C.DATA.SESSION = 1
 
 # -----------------------------------------------------------------------------
 # TRAIN
