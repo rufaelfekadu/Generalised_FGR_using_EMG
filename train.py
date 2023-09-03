@@ -202,7 +202,8 @@ if __name__ == '__main__':
     # args = arg_parse()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--opts', default=None, nargs=argparse.REMAINDER)
+
+    parser.add_argument('--opts', default=None, nargs='+')
 
     args = parser.parse_args()
     cfg.merge_from_list(args.opts)
