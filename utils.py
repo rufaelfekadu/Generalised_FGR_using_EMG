@@ -90,7 +90,7 @@ def arg_parse():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--d_lr', type=float, default=1e-3)
     parser.add_argument('--weight_decay', type=float, default=2.5e-5)
-    parser.add_argument('--epochs', type=int, default=15)
+    parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--batch_size', type=int, default=48)
     parser.add_argument('--betas', type=float, nargs='+', default=(.5, .999))
     parser.add_argument('--lam', type=float, default=0.25)
@@ -109,6 +109,12 @@ def arg_parse():
     # discriminator
     parser.add_argument('--disc_train_freq', type=int, default=2)
     parser.add_argument('--alpha', type=float, default=0.25)
+
+    #data
+    parser.add_argument('--subjects', type=int, default=[1])
+    parser.add_argument('--sessions', type=int, default=[1])
+    parser.add_argument('--pos', type=int, default=[1,2])
+    parser.add_argument('--checkpoint', type=bool, default=True)
 
     args, unknown = parser.parse_known_args()
 

@@ -4,6 +4,7 @@ import os
 #import model stuff
 from models import make_model, Net
 import numpy as np
+import pandas as pd
 
 #import data stuff
 import sys
@@ -57,7 +58,7 @@ def train_epoch(model, device, train_loader, optimizer, criterion, epoch):
     total_loss = AverageMeter()
     accuracy = AverageMeter()
 
-    for batch_idx, (data, (target, pos)) in enumerate(train_loader): # data: (batch_size, 3, 512, 512)
+    for batch_idx, (data, (target, pos, label)) in enumerate(train_loader): # data: (batch_size, 3, 512, 512)
 
         data, target, pos = data.to(device), target.to(device), pos.to(device)
 
@@ -92,8 +93,11 @@ def test(model, test_loader, device, criterion):
     test_accuracy = AverageMeter()
     test_loss = AverageMeter()
 
+    class_acc = torch.zeros(len(test_loader.dataset.classes))
+    class_len = torch.zeros(len(test_loader.dataset.classes))
+
     with torch.no_grad(): # no gradient calculation
-        for data, (target,pos) in test_loader:
+        for data, (target,pos, label) in test_loader:
             data, target = data.to(device), target.to(device)
 
             output = model(data)
@@ -101,10 +105,19 @@ def test(model, test_loader, device, criterion):
             pred = output.max(dim=1, keepdim=True)[1]
             test_accuracy.update(pred.eq(target.view_as(pred)).sum().item(), data.size(0))
             test_loss.update(criterion(output, target).item(), data.size(0))
-
+            
+            for class_id in test_loader.dataset.classes:
+                idx = torch.nonzero(label==class_id.to(label.device), as_tuple=False)
+                class_acc[class_id] += pred[idx].eq(target[idx].view_as(pred[idx])).sum().item()
+                class_len[class_id] += len(idx)
+    
+    class_acc /= class_len
+        
     output = {
         "test_loss": test_loss,
         "test_acc": test_accuracy,
+        "perclass": class_acc,
+        "class_len": class_len,
     }
 
     return output
@@ -114,8 +127,11 @@ def main(args):
             
     #setup logger
     logger = get_logger(os.path.join(args.logdir, 'cnn.log'))
+    logger_perclass = get_logger(os.path.join(args.logdir, 'cnn_perclass.log'))
+
     for arg, value in sorted(vars(args).items()):
         logger.info("%s: %r", arg, value)
+    
 
     #setup device
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -123,8 +139,12 @@ def main(args):
 
     #setup kfold
     k_fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
-    dataset = emgdata(args.data_path, subjects=[1], sessions=[1,2], pos=[1,2,3])
-
+    dataset = emgdata(args.data_path, 
+                      subjects=args.subjects, 
+                      sessions=args.sessions, 
+                      pos=args.pos, 
+                      checkpoint=args.checkpoint)
+    dataset.print_info()
     results = {}
     for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset, dataset.label)):
 
@@ -150,8 +170,13 @@ def main(args):
         test_output = test(model, test_loader, device=device, criterion=criterion)
         logger.info(f"{'': <10}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
         logger.info(f"{'': <10}{test_output['test_loss'].avg:^20.4f}{test_output['test_acc'].avg*100:^20.2f}")
-
+        
+        logger_perclass.info(f"{'Fold':<10}{'class': <20}{'Test Accuracy' : ^20}{'class length' : ^20}")
+        for i, (acc,length) in enumerate(zip(test_output['perclass'], test_output['class_len'])):
+            logger_perclass.info(f"{fold:<10}{test_loader.dataset.classNames[i]:<20}{acc:^20.2f}{length:^20.0f}")
+        
         results[fold] = test_output
+        result['class_names'] = test_loader.dataset.classNames
     
     #print final result
     logger.info(f"\n\n{'': <10}{'Fold' : <20}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
@@ -159,8 +184,11 @@ def main(args):
     for fold, result in results.items():
         logger.info(f"{fold+1:<10}{result['test_loss'].avg:^20.4f}{result['test_acc'].avg*100:^20.2f}")
         sum += result['test_acc'].avg*100
+
     logger.info(f"\n{'Average' : <10}{sum/len(results.items()):^20.4f}")
 
+    #save the results
+    torch.save(results, os.path.join(args.logdir, f'results.pt'))
 
     
         

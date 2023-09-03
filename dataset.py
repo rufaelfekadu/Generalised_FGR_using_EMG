@@ -37,6 +37,8 @@ class emgdata(Dataset):
                 self.target = dataset.target
                 self.pos = dataset.pos
                 self.label = dataset.label
+                self.classes = dataset.classes
+                self.classNames = dataset.classNames
                 del dataset
             except FileNotFoundError:
                 print('dataset not found, creating new dataset')
@@ -49,7 +51,7 @@ class emgdata(Dataset):
     def __len__(self):
         return len(self.data)
     def __getitem__(self, idx):
-        return self.data[idx], (self.target[idx], self.pos[idx])
+        return self.data[idx], (self.target[idx], self.pos[idx], self.label[idx])
     
     def create_dataset(self):
         dm = Data_Manager(self.subjects, self.pipeline)
@@ -66,7 +68,6 @@ class emgdata(Dataset):
         data = dataset[0]
         labels = dataset[1]
         labelencoder = LabelEncoder()
-        self.label = dataset[1]
         self.target = labelencoder.fit_transform(np.char.strip(labels, '_0123456789'))
         self.pos = torch.from_numpy(labelencoder.fit_transform(np.array([i.split('_')[2] for i in labels]))).long()
 
@@ -82,12 +83,28 @@ class emgdata(Dataset):
             self.target = self.target_transform(self.target)
         else:
             self.target = torch.from_numpy(self.target).long()
+        
+        self.label = torch.from_numpy(labelencoder.fit_transform(dataset[1]))
+        self.classes = torch.unique(self.label)
+        self.classNames = labelencoder.classes_
+        
     
     def senario_1(self):
         pass
     def senario_2(self):
         pass
 
+    def print_info(self):
+        # number of images in each class
+        print('----------Number of images in each class------')
+        print('')
+        for i in np.unique(self.target):
+            idx = self.target == i
+            print(f'Class {i} has {idx.sum()} samples')
+        print('----------------------------------------------')
+
+        # number of classes
+        print('number of classes: ', len(np.unique(self.label)))
     
     def load_saved_data(self, path):
         dataset = torch.load(path)

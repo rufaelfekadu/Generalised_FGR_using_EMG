@@ -131,6 +131,9 @@ def test(model, test_loader, device, criterion):
     test_loss = AverageMeter()
     test_disc_accuracy = AverageMeter()
 
+    # add perclass accuracy
+    perclass = {}
+
     with torch.no_grad(): # no gradient calculation
         for data, (target,pos) in test_loader:
 
@@ -148,6 +151,10 @@ def test(model, test_loader, device, criterion):
             test_loss.update(criterion(output, target).item(), data.size(0))
             test_disc_accuracy.update(disc_pred.eq(pos.view_as(disc_pred)).sum().item(), data.size(0))
 
+            for i in test_loader.dataset.label.unique():
+                idx = test_loader.dataset.target == i
+                class_acc = pred.eq(target.view_as(pred)).sum().item()/idx.sum().item()
+                perclass[i] = class_acc
     # test_loss /= len(test_loader.dataset)
     # print('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.00f}%)\n'.format(test_loss, correct, total, (correct/total)*100) )# print loss and accuracy
     output = {
