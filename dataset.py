@@ -11,6 +11,7 @@ from Source.fgr.pipelines import Data_Pipeline
 from Source.fgr.data_manager import Data_Manager
 from sklearn.model_selection import train_test_split
 import os
+from pathlib import Path
 
 
 scenario = {
