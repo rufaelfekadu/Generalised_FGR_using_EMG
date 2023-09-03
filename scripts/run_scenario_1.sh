@@ -9,7 +9,7 @@ do
     OUTPUT.LOG_DIR $OUTPUT_DIR'/cnn' \
     DATA.SUBJECT $subject \
     TRAIN.BATCH_SIZE 64 \
-    TRAIN.EPOCHS 100 \
+    TRAIN.NUM_EPOCHS 100 \
     TRAIN.LR 0.001 
 done
 
