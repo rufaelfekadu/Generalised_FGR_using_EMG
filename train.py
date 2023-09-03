@@ -8,10 +8,10 @@ import pandas as pd
 
 #import data stuff
 import sys
-sys.path.append('/Users/rufaelmarew/Documents/tau/project/Fingers-Gesture-Recognition')
-import Source.fgr.models as models
-from Source.fgr.pipelines import Data_Pipeline
-from Source.fgr.data_manager import Data_Manager
+# sys.path.append('/Users/rufaelmarew/Documents/tau/project/Fingers-Gesture-Recognition')
+# import Source.fgr.models as models
+# from Source.fgr.pipelines import Data_Pipeline
+# from Source.fgr.data_manager import Data_Manager
 
 from utils import preprocess_data, get_logger, arg_parse, AverageMeter
 from dataset import emgdata, load_saved_data
@@ -126,8 +126,7 @@ def test(model, test_loader, device, criterion):
 def main(args):
             
     #setup logger
-    logger = get_logger(os.path.join(args.logdir, 'cnn.log'))
-    logger_perclass = get_logger(os.path.join(args.logdir, 'cnn_perclass.log'))
+    logger = get_logger(os.path.join(args.logdir, 'train.log'))
 
     for arg, value in sorted(vars(args).items()):
         logger.info("%s: %r", arg, value)
@@ -171,12 +170,12 @@ def main(args):
         logger.info(f"{'': <10}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
         logger.info(f"{'': <10}{test_output['test_loss'].avg:^20.4f}{test_output['test_acc'].avg*100:^20.2f}")
         
-        logger_perclass.info(f"{'Fold':<10}{'class': <20}{'Test Accuracy' : ^20}{'class length' : ^20}")
+        logger.info(f"{'Fold':<10}{'class': <20}{'Test Accuracy' : ^20}{'class length' : ^20}")
         for i, (acc,length) in enumerate(zip(test_output['perclass'], test_output['class_len'])):
-            logger_perclass.info(f"{fold:<10}{test_loader.dataset.classNames[i]:<20}{acc:^20.2f}{length:^20.0f}")
+            logger.info(f"{fold:<10}{test_loader.dataset.classNames[i]:<20}{acc:^20.2f}{length:^20.0f}")
         
         results[fold] = test_output
-        result['class_names'] = test_loader.dataset.classNames
+    
     
     #print final result
     logger.info(f"\n\n{'': <10}{'Fold' : <20}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
