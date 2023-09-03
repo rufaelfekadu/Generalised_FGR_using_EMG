@@ -142,8 +142,7 @@ def main(cfg):
     dataset = emgdata(cfg.DATA.PATH,
                         subjects=cfg.DATA.SUBJECT,
                         sessions=cfg.DATA.SESSION,
-                        pos=cfg.DATA.POSITION,
-                        checkpoint=cfg.DATA.CHECKPOINT)
+                        pos=cfg.DATA.POSITION)
     dataset.print_info()
     results = {}
     for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset, dataset.label)):
