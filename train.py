@@ -5,9 +5,10 @@ import os
 from models import make_model, Net
 import numpy as np
 import pandas as pd
+import argparse
 
 #import data stuff
-import sys
+from config import config as cfg
 # sys.path.append('/Users/rufaelmarew/Documents/tau/project/Fingers-Gesture-Recognition')
 # import Source.fgr.models as models
 # from Source.fgr.pipelines import Data_Pipeline
@@ -37,14 +38,14 @@ def reset_weights(m):
             layer.reset_parameters()
 
 
-def train(args, model, device, train_loader, test_loader, optimizer, criterion, logger):
+def train(cfg, model, device, train_loader, test_loader, optimizer, criterion, logger):
 
     logger.info(f"{'Epoch' : <10}{'Train Loss' : ^20}{'Train Accuracy' : ^20}{'Test Loss' : ^20}{'Test Accuracy' : >10}")
-    for epoch in range(1,args.epochs+1):
+    for epoch in range(1,cfg.TRAIN.NUM_EPOCHS+1):
 
         train_output = train_epoch(model, device, train_loader, optimizer, criterion, epoch)
         log_string = ""
-        if epoch % args.test_freq == 0:
+        if epoch % cfg.TRAIN.TEST_FREQ == 0:
             log_string = '{:<10}{:^20.4f}{:^20.2f} '.format(epoch, train_output["train_loss"].avg, train_output["train_acc"].avg*100)
             test_output = test(model, test_loader, device=device, criterion=criterion)
             log_string += '{:^20.4f}{:>10.2f}'.format(test_output["test_loss"].avg, test_output["test_acc"].avg*100)
@@ -123,26 +124,26 @@ def test(model, test_loader, device, criterion):
     return output
 
 
-def main(args):
+def main(cfg):
             
     #setup logger
-    logger = get_logger(os.path.join(args.logdir, 'train.log'))
+    logger = get_logger(os.path.join(cfg.OUTPUT.LOG_DIR, 'train.log'))
 
-    for arg, value in sorted(vars(args).items()):
-        logger.info("%s: %r", arg, value)
+    logger.info(cfg)
     
 
     #setup device
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device(args.device)
+    device = torch.device(cfg.TRAIN.DEVICE)
 
     #setup kfold
-    k_fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
-    dataset = emgdata(args.data_path, 
-                      subjects=args.subjects, 
-                      sessions=args.sessions, 
-                      pos=args.pos, 
-                      checkpoint=args.checkpoint)
+    k_fold = StratifiedKFold(n_splits=cfg.TRAIN.N_SPLITS, shuffle=True, random_state=0)
+    
+    dataset = emgdata(cfg.DATA.DATA_PATH,
+                        subjects=cfg.DATA.SUBJECT,
+                        sessions=cfg.DATA.SESSION,
+                        pos=cfg.DATA.POSITION,
+                        checkpoint=cfg.DATA.CHECKPOINT)
     dataset.print_info()
     results = {}
     for fold, (train_ids, test_ids) in enumerate(k_fold.split(dataset, dataset.label)):
@@ -151,19 +152,24 @@ def main(args):
         train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
         test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
 
-        train_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=train_subsampler)
-        test_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=test_subsampler)
-
+        train_loader = DataLoader(dataset,
+                                    batch_size=cfg.TRAIN.BATCH_SIZE,
+                                    sampler=train_subsampler,
+                                    num_workers=cfg.TRAIN.NUM_WORKERS)
+        test_loader = DataLoader(dataset,
+                                    batch_size=cfg.TRAIN.BATCH_SIZE,
+                                    sampler=test_subsampler,
+                                    num_workers=cfg.TRAIN.NUM_WORKERS)
         model = Net(num_classes=10).to(device)
         model.apply(reset_weights)
 
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(
                         model.parameters(),
-                        lr=args.lr, betas=args.betas, weight_decay=args.weight_decay)
-    
+                        lr=cfg.TRAIN.LR, betas=cfg.TRAIN.BETAS, weight_decay=cfg.TRAIN.WEIGHT_DECAY)
+       
 
-        train(args, model, device, train_loader, test_loader, optimizer, criterion, logger)
+        train(cfg, model, device, train_loader, test_loader, optimizer, criterion, logger)
 
         #final test
         test_output = test(model, test_loader, device=device, criterion=criterion)
@@ -193,19 +199,25 @@ def main(args):
         
 if __name__ == '__main__':
 
-    args = arg_parse()
+    # args = arg_parse()
 
-    if isinstance(args.subjects, int):
-        args.__setattr__('subjects', [args.subjects])
-    if isinstance(args.sessions, int):
-        args.__setattr__('sessions', [args.sessions])
-    if isinstance(args.pos, int):
-        args.__setattr__('pos', [args.pos])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--opts', default=None, nargs=argparse.REMAINDER)
 
-    log_dir = os.path.join(args.logdir, f'subject_{args.subjects[0]}_session_{args.sessions[0]}_positions_{args.pos[0]}')
+    args = parser.parse_args()
+    cfg.merge_from_list(args.opts)
+
+    if isinstance(cfg.DATA.SUBJECT, int):
+        cfg.DATA.SUBJECT = [cfg.DATA.SUBJECT]
+    if isinstance(cfg.DATA.SESSION, int):
+        cfg.DATA.SESSION = [cfg.DATA.SESSION]
+    if isinstance(cfg.DATA.POSITION, int):
+        cfg.DATA.POSITION = [cfg.DATA.POSITION]
+
+    log_dir = os.path.join(cfg.OUTPUT.LOG_DIR,f'subject_{cfg.DATA.SUBJECT}' )
     Path(log_dir).mkdir(parents=True, exist_ok=True)
-    args.__setattr__('logdir', log_dir)
-    data_path = Path(args.data_path)
-    args.__setattr__('data_path', data_path)
+    cfg.OUTPUT.LOG_DIR = log_dir
+    data_path = Path(cfg.DATA.PATH)
+    cfg.DATA.DATA_PATH = data_path
 
-    main(args)
+    main(cfg)
