@@ -192,7 +192,8 @@ def main(cfg):
     logger.info(f"\n{'Average' : <10}{sum/len(results.items()):^20.4f}")
     results['average'] = sum/len(results.items())
     #save the results
-    torch.save(results, os.path.join(args.logdir, f'results.pt'))
+    # torch.save(results, os.path.join(args.logdir, f'results.pt'))
+    torch.save(results, os.path.join(cfg.OUTPUT.LOG_DIR, f'results.pt'))
 
     
         

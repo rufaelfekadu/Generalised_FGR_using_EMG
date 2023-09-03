@@ -13,12 +13,6 @@ from sklearn.model_selection import train_test_split
 import os
 from pathlib import Path
 
-
-scenario = {
-    0:{'subject':[1,2,3,4,5,6,7,8,9,10], 'sessions':[1,2], 'pos':[1,2,3]},
-    1:{'subject':[1,2,3,4,5,6,7,8,9,10], 'sessions':[1,2], 'pos':[1,2,3]},
-    2:{'subject':[1,2,3,4,5,6,7,8,9,10], 'sessions':[1,2], 'pos':[1,2,3]},
-}
 #torch dataset classs
 class emgdata(Dataset):
     def __init__(self, data_dir, subjects=[1], pos=[1,2,3], sessions=[1,2], transform=None, target_transform=None, train=True, checkpoint=True, scenario=0):
