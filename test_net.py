@@ -97,30 +97,37 @@ def main():
     logger = get_logger(os.path.join('./outputs', 'train_vit.log'))
     # pipeline definition and data manager creation
     
-    train_set_saved = True
+    # train_set_saved = True
 
-    if not train_set_saved:
+    # if not train_set_saved:
 
-        data_path = Path('../data/doi_10')
-        subject = 1
-        datest = emgdata(data_path, subject)
-        train_data, test_data = torch.utils.data.random_split(datest, [int(len(datest)*0.8), len(datest)-int(len(datest)*0.8)])
-        torch.save(train_data, './outputs/train_data.pt')
-        torch.save(test_data, './outputs/test_data.pt')
-    else:
-        train_data = torch.load('./outputs/train_data.pt')
-        test_data = torch.load('./outputs/test_data.pt')
+    #     data_path = Path('../data/doi_10')
+    #     subject = 1
+    #     datest = emgdata(data_path, subject)
+    #     train_data, test_data = torch.utils.data.random_split(datest, [int(len(datest)*0.8), len(datest)-int(len(datest)*0.8)])
+    #     torch.save(train_data, './outputs/train_data.pt')
+    #     torch.save(test_data, './outputs/test_data.pt')
+    # else:
+    #     train_data = torch.load('./outputs/train_data.pt')
+    #     test_data = torch.load('./outputs/test_data.pt')
+
+    # train_loader = DataLoader(train_data, batch_size=128, shuffle=True)
+    # test_loader = DataLoader(test_data, batch_size=128, shuffle=True)
+
+    test_data = emgdata('../data/doi_10', subjects=[1], pos=[1,2,3], sessions=[2])
+    train_data = emgdata('../data/doi_10', subjects=[4,5,7,11,12,15,16], pos=[1,2,3], sessions=[1,2])
 
     train_loader = DataLoader(train_data, batch_size=128, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=128, shuffle=True)
 
     # model definition
-    model = vision(image_size=4, 
-                    patch_size=2, 
-                    num_classes=10, 
-                    hidden_dim=64, 
-                    num_layers=1, num_heads=4, mlp_dim=40, attention_dropout=0.1).to(device)
-    # model = Net(num_classes=10).to(device)
+    # model = vision(image_size=4, 
+    #                 patch_size=2, 
+    #                 num_classes=10, 
+    #                 hidden_dim=64, 
+    #                 num_layers=4, num_heads=4, mlp_dim=40, attention_dropout=0.1).to(device)
+    
+    model = Net(num_classes=10).to(device)
     print(model)
     #print number of parameters
     logger.info(f'Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}')
