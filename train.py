@@ -218,7 +218,5 @@ if __name__ == '__main__':
     log_dir = os.path.join(cfg.OUTPUT.LOG_DIR,f'subject_{cfg.DATA.SUBJECT}' )
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     cfg.OUTPUT.LOG_DIR = log_dir
-    data_path = Path(cfg.DATA.PATH)
-    cfg.DATA.DATA_PATH = data_path
 
     main(cfg)
