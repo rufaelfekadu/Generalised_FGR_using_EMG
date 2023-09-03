@@ -185,7 +185,7 @@ def main(args):
         sum += result['test_acc'].avg*100
 
     logger.info(f"\n{'Average' : <10}{sum/len(results.items()):^20.4f}")
-
+    results['average'] = sum/len(results.items())
     #save the results
     torch.save(results, os.path.join(args.logdir, f'results.pt'))
 
@@ -194,8 +194,9 @@ def main(args):
 if __name__ == '__main__':
 
     args = arg_parse()
-
-    Path(args.logdir).mkdir(parents=True, exist_ok=True)
+    log_dir = os.path.join(args.logdir, f'subject_{args.subjects[0]}session_{args.sessions[0]}_positions_{args.pos[0]}')
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
+    args.__setattr__('logdir', log_dir)
     data_path = Path(args.data_path)
     args.__setattr__('data_path', data_path)
 
