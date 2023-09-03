@@ -139,7 +139,7 @@ def main(cfg):
     #setup kfold
     k_fold = StratifiedKFold(n_splits=cfg.TRAIN.N_SPLITS, shuffle=True, random_state=0)
     
-    dataset = emgdata(cfg.DATA.DATA_PATH,
+    dataset = emgdata(cfg.DATA.PATH,
                         subjects=cfg.DATA.SUBJECT,
                         sessions=cfg.DATA.SESSION,
                         pos=cfg.DATA.POSITION,
