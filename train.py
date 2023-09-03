@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', type=str, default='', help='configuration file')
-    parser.add_argument('--opts', default=None,help='modify config options using the command-line', nargs=argparse.REMAINDER)
+    parser.add_argument('opts', default=None,help='modify config options using the command-line', nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
     cfg.merge_from_list(args.opts)
