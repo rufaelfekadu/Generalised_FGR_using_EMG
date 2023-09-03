@@ -194,6 +194,14 @@ def main(args):
 if __name__ == '__main__':
 
     args = arg_parse()
+
+    if isinstance(args.subjects, int):
+        args.__setattr__('subjects', [args.subjects])
+    if isinstance(args.sessions, int):
+        args.__setattr__('sessions', [args.sessions])
+    if isinstance(args.pos, int):
+        args.__setattr__('pos', [args.pos])
+        
     log_dir = os.path.join(args.logdir, f'subject_{args.subjects[0]}session_{args.sessions[0]}_positions_{args.pos[0]}')
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     args.__setattr__('logdir', log_dir)

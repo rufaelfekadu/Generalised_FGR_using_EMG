@@ -22,12 +22,7 @@ scenario = {
 class emgdata(Dataset):
     def __init__(self, data_dir, subjects=[1], pos=[1,2,3], sessions=[1,2], transform=None, target_transform=None, train=True, checkpoint=True, scenario=0):
         
-        if isinstance(subjects, int):
-            subjects = [subjects]
-        if isinstance(pos, int):
-            pos = [pos]
-        if isinstance(sessions, int):
-            sessions = [sessions]
+        
         
         self.pipeline = Data_Pipeline(base_data_files_path=data_dir)  # configure the data pipeline you would like to use (check pipelines module for more info)
         self.subjects = subjects
