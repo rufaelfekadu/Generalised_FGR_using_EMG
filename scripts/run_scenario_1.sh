@@ -7,7 +7,7 @@ do
     python ../train.py \
     DATA.PATH $DATA_DIR \
     OUTPUT.LOG_DIR $OUTPUT_DIR'/cnn' \
-    DATA.SUBJECT $subject \
+    DATA.SUBJECT [$subject] \
     TRAIN.BATCH_SIZE 64 \
     TRAIN.EPOCHS 100 \
     TRAIN.LR 0.001 
