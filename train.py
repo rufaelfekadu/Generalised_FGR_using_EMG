@@ -2,7 +2,7 @@ import torch
 from pathlib import Path
 import os
 #import model stuff
-from models import make_model, Net
+from models import make_model, Net, vision
 import numpy as np
 import pandas as pd
 import argparse
@@ -161,6 +161,15 @@ def main(cfg):
                                     num_workers=cfg.TRAIN.NUM_WORKERS)
         
         model = Net(num_classes=10).to(device)
+        # model = vision(image_size=cfg.MODEL.TRANSFORMER.IMAGE_SIZE,
+        #                 patch_size = cfg.MODEL.TRANSFORMER.PATCH_SIZE,
+        #                 num_classes = 10,
+        #                 hidden_dim=cfg.MODEL.TRANSFORMER.HIDDEN_DIM,
+        #                 num_layers=cfg.MODEL.TRANSFORMER.NUM_LAYERS,
+        #                 num_heads=cfg.MODEL.TRANSFORMER.ATTENTION_HEADS,
+        #                 mlp_dim=cfg.MODEL.TRANSFORMER.MLP_DIM,
+        #                 attention_dropout=cfg.MODEL.TRANSFORMER.DROPOUT).to(device)
+
         model.apply(reset_weights)
 
         criterion = torch.nn.CrossEntropyLoss()

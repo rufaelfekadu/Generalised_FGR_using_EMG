@@ -27,6 +27,7 @@ _C.MODEL.TRANSFORMER.PATCH_SIZE = 2
 _C.MODEL.TRANSFORMER.HIDDEN_DIM = 64
 _C.MODEL.TRANSFORMER.ATTENTION_HEADS = 1
 _C.MODEL.TRANSFORMER.DROPOUT = 0.2
+_C.MODEL.TRANSFORMER.MLP_DIM = 64
 
 # -----------------------------------------------------------------------------
 # DATA

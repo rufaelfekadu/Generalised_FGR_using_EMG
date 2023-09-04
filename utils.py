@@ -119,3 +119,62 @@ def arg_parse():
     args, unknown = parser.parse_known_args()
 
     return args
+
+
+import pygame
+from pygame.locals import *
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+
+# Define the 3D coordinates of the 21 keypoints of the hand
+hand_keypoints = [
+    (0, 0, 0),  # Wrist
+    (1, 0, 0),  # Thumb knuckle
+    (2, 0, 0),  # Thumb tip
+    (3, 0, 0),  # Index finger knuckle
+    (4, 0, 0),  # Index finger tip
+    # Add coordinates for other fingers here
+]
+
+# Define connections between keypoints (bones)
+connections = [
+    (0, 1),
+    (1, 2),
+    (0, 3),
+    (3, 4),
+    # Add connections for other fingers here
+]
+
+def draw_hand():
+    glLineWidth(2)
+    glBegin(GL_LINES)
+    glColor3fv((1, 0, 0))  # Red color for lines
+
+    for connection in connections:
+        for vertex in connection:
+            glVertex3fv(hand_keypoints[vertex])
+
+    glEnd()
+
+def main():
+    pygame.init()
+    display = (800, 600)
+    pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
+
+    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
+    glTranslatef(0.0, 0.0, -5)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        glRotatef(1, 3, 1, 1)  # Rotate the hand
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        draw_hand()
+        pygame.display.flip()
+        pygame.time.wait(10)
+
+if __name__ == "__main__":
+    main()
