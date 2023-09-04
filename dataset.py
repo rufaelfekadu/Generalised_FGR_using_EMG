@@ -110,6 +110,43 @@ def load_saved_data(path):
     dataset = torch.load(path)
     return dataset
 
+def get_dataset(cfg):
+
+    if cfg.scenario == 0:
+        assert cfg.test_subjects == cfg.subjects
+        dataset = emgdata(data_dir=cfg.data_path,
+                            subjects=cfg.subjects,
+                            pos=cfg.positions,
+                            sessions=cfg.sessions)
+        test_size = int(len(dataset)*0.2)
+        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len(dataset)-test_size, test_size])
+    elif cfg.scenario == 1:
+        assert cfg.test_subjects != cfg.subjects
+        subjects= [i for i in subjects if i not in cfg.test_subjects]
+        train_dataset = emgdata(data_dir=cfg.data_path,
+                                subjects=cfg.subjects,
+                                pos=cfg.positions,
+                                sessions=cfg.sessions)
+        test_dataset = emgdata(data_dir=cfg.data_path,
+                                subjects=cfg.test_subjects,
+                                pos=cfg.positions,
+                                sessions=cfg.sessions)
+    elif cfg.scenario == 2:
+        train_subjects = [4,5,7,11,12,15,16]
+        test_subject = [1]
+
+        train_dataset = emgdata(data_dir=cfg.data_path,
+                                subjects=train_subjects,
+                                pos=cfg.positions,
+                                sessions=cfg.sessions)
+        test_dataset = emgdata(data_dir=cfg.data_path,
+                                subjects=test_subject,
+                                pos=cfg.positions,
+                                sessions=cfg.sessions)
+    else:
+        raise ValueError('invalid scenario')
+    return train_dataset, test_dataset
+
 
 if __name__ == '__main__':
     from pathlib import Path
@@ -117,13 +154,15 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str, default='/home/rufael.marew/Documents/projects/tau/data/doi_10')
-    parser.add_argument('--subject', type=int, default=[1])
+    parser.add_argument('--subjects', type=int, default=[1])
+    parser.add_argument('--test_subjects', type=int, default=[1])
     parser.add_argument('--sessions', type=int, default=[1,2])
     parser.add_argument('--positions', type=int, default=[1,2,3])
-    parser.add_argument('checkpoint', type=bool, default=True)
+    parser.add_argument('--checkpoint', type=bool, default=True)
+    parser.add_argument('--scenario', type=int, default=0)
     args = parser.parse_args()
 
     data_path = Path(args.data_path)
-    dataset = emgdata(args.data_path, subjects=args.subject, sessions=args.sessions, pos=args.positions)
-
-    print(dataset.__len__())
+    train, test = get_dataset(args)
+    print(train.__len__())
+    print(test.__len__())

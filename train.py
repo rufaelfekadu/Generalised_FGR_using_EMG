@@ -159,6 +159,7 @@ def main(cfg):
                                     batch_size=cfg.TRAIN.BATCH_SIZE,
                                     sampler=test_subsampler,
                                     num_workers=cfg.TRAIN.NUM_WORKERS)
+        
         model = Net(num_classes=10).to(device)
         model.apply(reset_weights)
 
@@ -208,6 +209,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     cfg.merge_from_list(args.opts)
 
+    log_dir = os.path.join(cfg.OUTPUT.LOG_DIR,f'subject_{cfg.DATA.SUBJECT}' )
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
+
     if isinstance(cfg.DATA.SUBJECT, int):
         cfg.DATA.SUBJECT = [cfg.DATA.SUBJECT]
     if isinstance(cfg.DATA.SESSION, int):
@@ -215,8 +219,7 @@ if __name__ == '__main__':
     if isinstance(cfg.DATA.POSITION, int):
         cfg.DATA.POSITION = [cfg.DATA.POSITION]
 
-    log_dir = os.path.join(cfg.OUTPUT.LOG_DIR,f'subject_{cfg.DATA.SUBJECT}' )
-    Path(log_dir).mkdir(parents=True, exist_ok=True)
+    
     cfg.OUTPUT.LOG_DIR = log_dir
 
     main(cfg)

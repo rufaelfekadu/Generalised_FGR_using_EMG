@@ -67,4 +67,4 @@ _C.TRAIN.DEVICE = "cuda"
 # -----------------------------------------------------------------------------
 
 _C.OUTPUT = CN()
-_C.OUTPUT.LOG_DIR = "outputs/"
+_C.OUTPUT.LOG_DIR = "outputs/single_position"
