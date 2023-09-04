@@ -175,9 +175,9 @@ def main(cfg):
         logger.info(f"{'': <10}{'Test Loss' : ^20}{'Test Accuracy' : ^20}")
         logger.info(f"{'': <10}{test_output['test_loss'].avg:^20.4f}{test_output['test_acc'].avg*100:^20.2f}")
         
-        logger.info(f"{'Fold':<10}{'class': <20}{'Test Accuracy' : ^20}{'class length' : ^20}")
-        for i, (acc,length) in enumerate(zip(test_output['perclass'], test_output['class_len'])):
-            logger.info(f"{fold:<10}{test_loader.dataset.classNames[i]:<20}{acc:^20.2f}{length:^20.0f}")
+        # logger.info(f"{'Fold':<10}{'class': <20}{'Test Accuracy' : ^20}{'class length' : ^20}")
+        # for i, (acc,length) in enumerate(zip(test_output['perclass'], test_output['class_len'])):
+        #     logger.info(f"{fold:<10}{test_loader.dataset.classNames[i]:<20}{acc:^20.2f}{length:^20.0f}")
         
         results[fold] = test_output
     
