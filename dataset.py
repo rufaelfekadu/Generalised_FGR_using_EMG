@@ -67,7 +67,7 @@ class emgdata(Dataset):
         self.target = labelencoder.fit_transform(np.char.strip(labels, '_0123456789'))
         self.pos = torch.from_numpy(labelencoder.fit_transform(np.array([i.split('_')[2] for i in labels]))).long()
 
-        data = data.reshape(data.shape[0],1,4,4)
+        # data = data.reshape(data.shape[0],1,4,4)
         self.data = data
 
         if self.transform is not None:
