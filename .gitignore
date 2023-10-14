@@ -141,3 +141,4 @@ cython_debug/
 
 # Ignore all .swo files in
 outputs/
+dataset/
